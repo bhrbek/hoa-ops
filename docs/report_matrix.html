@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Matrix - Report Builder</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Config -->
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec5b",
+              "primary-dim": "#0b8a36",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102216",
+              "surface-dark": "#112217",
+              "border-green": "#326744",
+              "text-secondary": "#92c9a4"
+            },
+            fontFamily: {
+              "display": ["Space Grotesk", "sans-serif"],
+              "body": ["Noto Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "0.25rem", 
+              "lg": "0.5rem", 
+              "xl": "0.75rem", 
+              "full": "9999px"
+            },
+            backgroundImage: {
+               'grid-pattern': "linear-gradient(to right, #326744 1px, transparent 1px), linear-gradient(to bottom, #326744 1px, transparent 1px)",
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: "Space Grotesk", "Noto Sans", sans-serif;
+        }
+        /* Custom scrollbar for industrial feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #112217; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #326744; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #13ec5b; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white overflow-hidden">
+<div class="flex h-screen w-full flex-row overflow-hidden">
+<!-- Side Navigation -->
+<aside class="flex w-64 flex-col border-r border-border-green bg-surface-dark hidden md:flex shrink-0 z-20">
+<div class="flex h-full flex-col justify-between p-4">
+<div class="flex flex-col gap-6">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/50" data-alt="Abstract geological geometric pattern" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBZ02nRLIwZMiGj5rLf4mCea73yJnjxs_EntItKW3-ylJtIhbt5JwEeCp2uU3xVEhc357O9YjG4QLaClDg-6pFMZbVOlONxBZmVX09yGq0mo09jWmq9ty1JesxSqsapXRzGuQkldZwzu6Hfx4N6GJx0pVmbsRv7zNqtHLf2gVAiB4WxElCzwa5v6ZoGsBpfrMiEcOukKFQg7FF8P9jqZbjmFdmvccceR06G_iHz2EUYA9QZCYOzhp1bOvJJ70nZiq01IgB8JTfPofUn");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold tracking-widest leading-none">THE JAR</h1>
+<p class="text-text-secondary text-xs font-mono mt-1">v4.0.1 Industrial</p>
+</div>
+</div>
+<!-- Nav Items -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">home</span>
+<span class="text-white text-sm font-medium tracking-wide">The Jar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded bg-[#23482f] border border-border-green/50 shadow-[0_0_10px_rgba(19,236,91,0.1)]" href="#">
+<span class="material-symbols-outlined text-primary">monitoring</span>
+<span class="text-white text-sm font-bold tracking-wide">The Matrix</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">terrain</span>
+<span class="text-white text-sm font-medium tracking-wide">Geology</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">database</span>
+<span class="text-white text-sm font-medium tracking-wide">Extraction</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Nav -->
+<div class="flex flex-col gap-2 border-t border-border-green pt-4">
+<a class="flex items-center gap-3 px-3 py-3 rounded hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors">settings</span>
+<span class="text-white text-sm font-medium tracking-wide">Settings</span>
+</a>
+<div class="px-3 py-2">
+<div class="flex items-center gap-2 text-xs text-text-secondary font-mono">
+<div class="size-2 rounded-full bg-primary animate-pulse"></div>
+                            SYSTEM ONLINE
+                        </div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Background Grid Effect -->
+<div class="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style="background-size: 40px 40px; background-image: linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px);"></div>
+<!-- Header -->
+<header class="flex-none p-6 md:px-8 border-b border-border-green bg-surface-dark/80 backdrop-blur-sm z-10">
+<div class="flex flex-wrap justify-between items-end gap-4 max-w-7xl mx-auto">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-1">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+                            Report Builder
+                        </div>
+<h2 class="text-white text-4xl font-black leading-tight tracking-tighter uppercase">The Matrix</h2>
+<p class="text-text-secondary text-sm font-mono uppercase tracking-widest">Configuration // v.2.4.1</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 rounded border border-border-green hover:border-primary text-text-secondary hover:text-white bg-transparent h-10 px-4 text-xs font-bold uppercase tracking-wider transition-all">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Save</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded bg-primary hover:bg-primary/90 text-background-dark h-10 px-6 text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(19,236,91,0.3)]">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Export Report</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-6 md:px-8">
+<div class="flex flex-col gap-6 max-w-7xl mx-auto h-full">
+<!-- Controls Bar -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-4">
+<!-- Dropdown 1 -->
+<div class="md:col-span-5 lg:col-span-4">
+<label class="block group">
+<span class="text-text-secondary text-xs font-bold tracking-widest uppercase mb-2 block group-focus-within:text-primary transition-colors">Slice By (Dimension)</span>
+<div class="relative">
+<select class="w-full appearance-none rounded bg-[#193322] border border-border-green text-white h-12 px-4 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm uppercase transition-all hover:border-primary/50 cursor-pointer">
+<option value="domain">Domain</option>
+<option value="theme">Theme</option>
+<option value="team_member">Team Member</option>
+</select>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+</div>
+<!-- Dropdown 2 -->
+<div class="md:col-span-5 lg:col-span-4">
+<label class="block group">
+<span class="text-text-secondary text-xs font-bold tracking-widest uppercase mb-2 block group-focus-within:text-primary transition-colors">Metric (Output)</span>
+<div class="relative">
+<select class="w-full appearance-none rounded bg-[#193322] border border-border-green text-white h-12 px-4 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm uppercase transition-all hover:border-primary/50 cursor-pointer">
+<option value="sand_volume">Sand Volume (Count)</option>
+<option value="revenue">Revenue</option>
+<option value="gp">Gross Profit (GP)</option>
+</select>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+</div>
+<!-- Action - Generate -->
+<div class="md:col-span-2 lg:col-span-4 flex items-end">
+<button class="w-full lg:w-auto h-12 px-6 rounded border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-bold uppercase tracking-wider text-sm transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+<span>Update Matrix</span>
+</button>
+</div>
+</section>
+<!-- Main Visualization Grid -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[400px]">
+<!-- Main Chart Area -->
+<div class="lg:col-span-2 flex flex-col rounded-lg border border-border-green bg-[#112217]/50 relative overflow-hidden group">
+<!-- Decorative Corner -->
+<div class="absolute top-0 right-0 p-2 opacity-50">
+<svg fill="none" height="20" viewbox="0 0 20 20" width="20">
+<path d="M0 0H20V20" stroke="#13ec5b" stroke-width="2"></path>
+</svg>
+</div>
+<div class="p-6 flex flex-col h-full gap-6">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-white font-medium uppercase tracking-wide">Sand Volume by Domain (YTD)</h3>
+<p class="text-text-secondary text-xs mt-1">Industrial // Aggregate // Validated</p>
+</div>
+<div class="text-right">
+<p class="text-3xl font-bold text-white tracking-tighter">1,240 <span class="text-sm font-normal text-text-secondary align-top mt-1 inline-block">Units</span></p>
+<div class="flex items-center justify-end gap-1 text-primary text-sm font-mono">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12.4%</span>
+</div>
+</div>
+</div>
+<!-- Chart Bars -->
+<div class="flex-1 flex items-end justify-between gap-2 md:gap-4 w-full pt-4 min-h-[250px]">
+<!-- Bar 1 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[45%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Jan</span>
+</div>
+<!-- Bar 2 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[55%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Feb</span>
+</div>
+<!-- Bar 3 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[35%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Mar</span>
+</div>
+<!-- Bar 4 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[70%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Apr</span>
+</div>
+<!-- Bar 5 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[62%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">May</span>
+</div>
+<!-- Bar 6 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#13ec5b] border-t border-white rounded-t-sm shadow-[0_0_20px_rgba(19,236,91,0.3)] h-[85%]">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-background-dark border border-primary text-primary text-[10px] px-1 py-0.5 rounded opacity-100 font-bold whitespace-nowrap">Peak</div>
+</div>
+<span class="text-primary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Jun</span>
+</div>
+<!-- Bar 7 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[40%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Jul</span>
+</div>
+<!-- Bar 8 -->
+<div class="flex flex-col items-center gap-2 flex-1 group/bar cursor-pointer">
+<div class="relative w-full bg-[#23482f] border-t border-text-secondary/30 rounded-t-sm hover:bg-[#13ec5b] transition-all duration-300 h-[50%] group-hover/bar:shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
+<span class="text-text-secondary text-[10px] md:text-xs font-mono uppercase font-bold tracking-wider">Aug</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Shield Analysis Widget (Heatmap) -->
+<div class="lg:col-span-1 flex flex-col gap-4">
+<!-- Widget Card -->
+<div class="flex flex-col rounded-lg border border-border-green bg-[#112217]/50 p-6 h-full min-h-[300px]">
+<div class="flex justify-between items-start mb-6">
+<div class="flex flex-col">
+<h3 class="text-white font-medium uppercase tracking-wide">Shield Analysis</h3>
+<p class="text-text-secondary text-xs mt-1">Capacity Heatmap</p>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 bg-primary/20 border border-primary/50 rounded text-xs text-primary font-bold uppercase tracking-widest animate-pulse">
+<div class="size-1.5 rounded-full bg-primary"></div>
+                                        Live
+                                    </div>
+</div>
+<!-- Heatmap Grid -->
+<div class="flex-1 grid grid-cols-4 gap-2 content-start">
+<!-- Tooltip logic would go here in a real app, keeping it simple for UI -->
+<!-- High Capacity (Active) -->
+<div class="aspect-square rounded border border-primary bg-primary text-[#102216] font-bold text-xs flex items-center justify-center cursor-help hover:scale-105 transition-transform shadow-[0_0_10px_rgba(19,236,91,0.4)]" title="Alex R. - 98% Capacity">AR</div>
+<div class="aspect-square rounded border border-primary bg-primary text-[#102216] font-bold text-xs flex items-center justify-center cursor-help hover:scale-105 transition-transform shadow-[0_0_10px_rgba(19,236,91,0.4)]" title="Sarah K. - 95% Capacity">SK</div>
+<!-- Mid-High Capacity -->
+<div class="aspect-square rounded border border-primary/50 bg-primary/60 text-white font-bold text-xs flex items-center justify-center cursor-help hover:scale-105 transition-transform">MJ</div>
+<div class="aspect-square rounded border border-primary/50 bg-primary/60 text-white font-bold text-xs flex items-center justify-center cursor-help hover:scale-105 transition-transform">BT</div>
+<div class="aspect-square rounded border border-primary/50 bg-primary/60 text-white font-bold text-xs flex items-center justify-center cursor-help hover:scale-105 transition-transform">LM</div>
+<!-- Medium Capacity -->
+<div class="aspect-square rounded border border-border-green bg-[#23482f] text-text-secondary text-xs flex items-center justify-center cursor-help hover:bg-primary/40 transition-colors">DN</div>
+<div class="aspect-square rounded border border-border-green bg-[#23482f] text-text-secondary text-xs flex items-center justify-center cursor-help hover:bg-primary/40 transition-colors">CP</div>
+<div class="aspect-square rounded border border-border-green bg-[#23482f] text-text-secondary text-xs flex items-center justify-center cursor-help hover:bg-primary/40 transition-colors">KR</div>
+<div class="aspect-square rounded border border-border-green bg-[#23482f] text-text-secondary text-xs flex items-center justify-center cursor-help hover:bg-primary/40 transition-colors">JL</div>
+<!-- Low Capacity -->
+<div class="aspect-square rounded border border-white/10 bg-white/5 text-white/40 text-xs flex items-center justify-center cursor-help hover:bg-white/10 transition-colors">WE</div>
+<div class="aspect-square rounded border border-white/10 bg-white/5 text-white/40 text-xs flex items-center justify-center cursor-help hover:bg-white/10 transition-colors">TY</div>
+<div class="aspect-square rounded border border-white/10 bg-white/5 text-white/40 text-xs flex items-center justify-center cursor-help hover:bg-white/10 transition-colors">UI</div>
+</div>
+<!-- Legend -->
+<div class="mt-4 pt-4 border-t border-border-green flex justify-between items-center text-[10px] text-text-secondary uppercase tracking-wider font-mono">
+<div class="flex items-center gap-2">
+<div class="size-2 bg-primary rounded-sm shadow-[0_0_5px_rgba(19,236,91,0.5)]"></div>
+<span>At Capacity</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-2 bg-[#23482f] rounded-sm border border-border-green"></div>
+<span>Optimal</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-2 bg-white/5 rounded-sm border border-white/10"></div>
+<span>Avail</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Data Table Preview (Optional/Implied) -->
+<section class="border border-border-green rounded-lg overflow-hidden bg-[#112217]/50 mb-6">
+<div class="bg-[#193322] px-4 py-3 border-b border-border-green flex justify-between items-center">
+<span class="text-xs font-bold uppercase tracking-widest text-white">Raw Data Stream</span>
+<span class="material-symbols-outlined text-text-secondary text-sm">code</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-text-secondary">
+<thead class="text-xs font-mono uppercase bg-white/5 text-white">
+<tr>
+<th class="px-4 py-3 font-medium">Domain ID</th>
+<th class="px-4 py-3 font-medium">Metric Type</th>
+<th class="px-4 py-3 font-medium">Timestamp</th>
+<th class="px-4 py-3 font-medium text-right">Volume</th>
+<th class="px-4 py-3 font-medium text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-green font-mono text-xs">
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-3 text-white">DOM-001-A</td>
+<td class="px-4 py-3">Sand Volume</td>
+<td class="px-4 py-3">2023-10-24 14:02:11</td>
+<td class="px-4 py-3 text-right text-white font-bold">420</td>
+<td class="px-4 py-3 text-center"><span class="text-primary">●</span> Active</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-3 text-white">DOM-004-B</td>
+<td class="px-4 py-3">Extraction</td>
+<td class="px-4 py-3">2023-10-24 13:58:05</td>
+<td class="px-4 py-3 text-right text-white font-bold">115</td>
+<td class="px-4 py-3 text-center"><span class="text-primary">●</span> Active</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="px-4 py-3 text-white">DOM-002-C</td>
+<td class="px-4 py-3">Sand Volume</td>
+<td class="px-4 py-3">2023-10-24 13:45:22</td>
+<td class="px-4 py-3 text-right text-white font-bold">890</td>
+<td class="px-4 py-3 text-center"><span class="text-yellow-500">●</span> Pending</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+<!-- Decorative Corner Elements for Industrial Feel -->
+<div class="fixed bottom-4 right-4 z-50 pointer-events-none hidden lg:block">
+<div class="flex flex-col items-end gap-1 opacity-40">
+<div class="w-16 h-1 bg-primary"></div>
+<div class="w-8 h-1 bg-primary"></div>
+<div class="w-2 h-1 bg-primary"></div>
+</div>
+</div>
+</body></html>

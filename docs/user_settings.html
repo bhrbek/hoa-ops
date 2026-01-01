@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Settings - The Jar</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#162b1e", 
+                        "border-dark": "#2a4533",
+                        "text-muted": "#92c9a4"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for industrial feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #102216; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a4533; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3e5e48; 
+        }
+        
+        /* Custom Range/Toggle Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #13ec5b;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #13ec5b;
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center p-4">
+<!-- Modal Backdrop / Container -->
+<!-- Ideally this would be an overlay, but creating the page as the modal view -->
+<div class="relative w-full max-w-2xl bg-white dark:bg-surface-dark rounded-lg border border-stone-200 dark:border-border-dark shadow-2xl overflow-hidden flex flex-col">
+<!-- Header -->
+<div class="px-6 py-5 border-b border-stone-200 dark:border-border-dark flex justify-between items-start bg-gray-50 dark:bg-[#13261b]">
+<div class="flex flex-col gap-1">
+<h1 class="text-stone-900 dark:text-white text-2xl font-bold tracking-tight uppercase">User Settings</h1>
+<p class="text-stone-500 dark:text-text-muted text-sm font-normal">Calibrate your environment.</p>
+</div>
+<button class="text-stone-400 hover:text-stone-600 dark:text-border-dark dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-3xl">close</span>
+</button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto max-h-[70vh] p-6 space-y-8">
+<!-- Section 1: The Jar Calibration -->
+<div class="space-y-5">
+<div class="flex items-center gap-2 border-b border-stone-200 dark:border-border-dark pb-2">
+<span class="material-symbols-outlined text-primary text-xl">tune</span>
+<h2 class="text-stone-900 dark:text-white text-lg font-bold tracking-tight">The Jar Calibration</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Timezone -->
+<label class="flex flex-col gap-2">
+<span class="text-stone-600 dark:text-stone-300 text-sm font-medium">Timezone</span>
+<div class="relative">
+<select class="w-full h-12 rounded bg-stone-50 dark:bg-[#0f1f15] border border-stone-300 dark:border-border-dark text-stone-900 dark:text-white px-4 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary appearance-none transition-colors">
+<option>Pacific Time (US &amp; Canada)</option>
+<option>Mountain Time (US &amp; Canada)</option>
+<option>Central Time (US &amp; Canada)</option>
+<option selected="">Eastern Time (US &amp; Canada)</option>
+<option>Greenwich Mean Time</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-stone-500 dark:text-text-muted">
+<span class="material-symbols-outlined text-xl">public</span>
+</div>
+</div>
+</label>
+<!-- Weekly Capacity -->
+<label class="flex flex-col gap-2">
+<span class="text-stone-600 dark:text-stone-300 text-sm font-medium">Weekly Capacity (Hours)</span>
+<div class="relative">
+<input class="w-full h-12 rounded bg-stone-50 dark:bg-[#0f1f15] border border-stone-300 dark:border-border-dark text-stone-900 dark:text-white px-4 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-stone-400 dark:placeholder:text-stone-600" type="number" value="40"/>
+<div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-stone-500 dark:text-text-muted">
+<span class="material-symbols-outlined text-xl">work_history</span>
+</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Section 2: Notifications -->
+<div class="space-y-5">
+<div class="flex items-center gap-2 border-b border-stone-200 dark:border-border-dark pb-2">
+<span class="material-symbols-outlined text-primary text-xl">notifications</span>
+<h2 class="text-stone-900 dark:text-white text-lg font-bold tracking-tight">Notifications</h2>
+</div>
+<div class="bg-stone-50 dark:bg-[#13261b] border border-stone-200 dark:border-border-dark rounded-lg p-5 flex flex-col gap-6">
+<!-- Toggle Row -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-stone-900 dark:text-white font-bold text-base">Morning Sediment Check</span>
+<span class="text-stone-500 dark:text-text-muted text-sm mt-1">Receive a daily calendar summary of your Rocks and Sand.</span>
+</div>
+<!-- Toggle Switch Component -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-stone-300 dark:border-[#102216] appearance-none cursor-pointer checked:right-0 checked:border-primary transition-all duration-300 z-10 top-0 left-0" id="sediment-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-stone-300 dark:bg-border-dark cursor-pointer transition-colors duration-300" for="sediment-toggle"></label>
+</div>
+</div>
+<!-- Dependent Input: Time Picker -->
+<div class="pt-4 border-t border-stone-200 dark:border-[#1e3627] flex items-center gap-4">
+<div class="flex items-center justify-center w-10 h-10 rounded bg-stone-200 dark:bg-[#1e3627] text-stone-500 dark:text-primary">
+<span class="material-symbols-outlined text-xl">schedule</span>
+</div>
+<div class="flex-1">
+<label class="block text-xs uppercase tracking-wide text-stone-500 dark:text-text-muted font-bold mb-1" for="time-picker">Notification Time</label>
+<input class="bg-transparent border-0 border-b border-stone-300 dark:border-stone-600 text-stone-900 dark:text-white p-0 pb-1 w-32 focus:ring-0 focus:border-primary font-mono text-xl" id="time-picker" type="time" value="09:00"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Visualization / Graphic Element (Abstract Geological Pattern) -->
+<div class="rounded-lg h-32 w-full relative overflow-hidden border border-stone-200 dark:border-border-dark">
+<!-- Using a CSS gradient to simulate the "Geological Industrial" layers -->
+<div class="absolute inset-0 bg-[linear-gradient(110deg,#102216_0%,#162b1e_40%,#13ec5b22_40.1%,#13ec5b22_40.5%,#162b1e_40.6%,#162b1e_100%)] opacity-80" data-alt="Abstract dark geological layers graphic pattern with a thin neon green vein running through"></div>
+<div class="absolute bottom-3 left-4 text-xs font-mono text-primary/60 uppercase tracking-widest">Sys.Status: Online</div>
+</div>
+</div>
+<!-- Footer -->
+<div class="p-6 border-t border-stone-200 dark:border-border-dark bg-gray-50 dark:bg-[#13261b] flex justify-end gap-3">
+<button class="px-6 py-3 rounded text-stone-600 hover:text-stone-900 dark:text-white/70 dark:hover:text-white text-sm font-bold transition-colors hover:bg-stone-200 dark:hover:bg-white/5">
+                Cancel
+            </button>
+<button class="px-6 py-3 rounded bg-primary hover:bg-[#0fd650] text-background-dark text-sm font-bold shadow-[0_0_15px_-3px_rgba(19,236,91,0.4)] hover:shadow-[0_0_20px_-3px_rgba(19,236,91,0.6)] transition-all transform active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">save</span>
+                Save Configuration
+            </button>
+</div>
+</div>
+</body></html>
