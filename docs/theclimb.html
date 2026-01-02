@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Climb - Strategy Execution</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d4fd7",
+                        "primary-dark": "#153ab0",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111521",
+                        "granite-light": "#f0f2f5",
+                        "slate-text": "#506395",
+                        "dark-text": "#0e121b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-dark-text dark:text-white antialiased overflow-x-hidden transition-colors duration-200">
+<div class="min-h-screen flex flex-col">
+<!-- Navigation -->
+<header class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="px-4 md:px-10 h-16 flex items-center justify-between">
+<!-- Logo & Brand -->
+<div class="flex items-center gap-3">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">landscape</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-dark-text dark:text-white">The Climb</h1>
+</div>
+<!-- Nav Links (Desktop) -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium text-slate-text hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-bold text-primary" href="#">Strategy</a>
+<a class="text-sm font-medium text-slate-text hover:text-primary transition-colors" href="#">Projects</a>
+<a class="text-sm font-medium text-slate-text hover:text-primary transition-colors" href="#">Team</a>
+</nav>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button class="hidden sm:flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>Add Rock</span>
+</button>
+<div aria-label="User Avatar" class="size-9 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 cursor-pointer" data-alt="User profile picture" role="img" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCa_9POEIBMmCD__ZttH2_UITxlxQqyIVcMI2cmh3mJgF5gpz0PMGRVyWQXfh14lw8rAlPV47gmshmEF2DgbjnilMOuM1XNcggwItyZf_4N9yKPigHahFHVWJeK1A6DSj-4fZs1Vh2D6fXcbdmAGdSmus3kBsVfie3yjYECm3mCAP9zVfDoyYAnLHJ2o0bHr1M5EC5ILa3LHrpSKRuwsNIDyxgufEt-6OF6FnS7DrOCULEgQJP_jkLK-_H4MDG1sDkIa1wfUyUggL0'); background-size: cover; background-position: center;">
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-10 py-8">
+<!-- Page Heading & Context -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-primary font-semibold text-sm uppercase tracking-wider">
+<span class="material-symbols-outlined text-lg">calendar_month</span>
+                        Current Quarter
+                    </div>
+<h2 class="text-3xl md:text-4xl font-black tracking-tight text-dark-text dark:text-white">Q3 2023 Strategy Execution</h2>
+<p class="text-slate-text max-w-2xl text-base md:text-lg">
+                        Track your quarterly Rocks, supporting projects, and daily sand. Ensure alignment and visibility across the organization.
+                    </p>
+</div>
+<!-- KPI Summary Mini-Cards -->
+<div class="flex gap-4">
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm min-w-[120px]">
+<p class="text-xs font-medium text-slate-text uppercase">Avg Progress</p>
+<p class="text-2xl font-bold text-dark-text dark:text-white mt-1">68%</p>
+</div>
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm min-w-[120px]">
+<p class="text-xs font-medium text-slate-text uppercase">Off Track</p>
+<p class="text-2xl font-bold text-red-500 mt-1">1</p>
+</div>
+</div>
+</div>
+<!-- Filters Toolbar -->
+<div class="sticky top-16 z-30 bg-background-light dark:bg-background-dark pb-4 pt-2 mb-2 flex flex-wrap items-center gap-3">
+<button class="group flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary text-lg">filter_list</span>
+<span>Filter</span>
+</button>
+<div class="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+<button class="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-medium">
+                    All Owners
+                    <span class="material-symbols-outlined text-lg">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-text border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">
+                    Status: On Track
+                    <span class="material-symbols-outlined text-lg">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-text border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">
+                    Department: Product
+                    <span class="material-symbols-outlined text-lg">arrow_drop_down</span>
+</button>
+</div>
+<!-- Strategy Hierarchy Tree -->
+<div class="flex flex-col gap-6">
+<!-- LEVEL 1: ROCK CARD (Expanded) -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-lg">
+<!-- Rock Header -->
+<div class="p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center border-b border-slate-100 dark:border-slate-700/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<div class="flex items-start gap-4 flex-1">
+<!-- Toggle Icon -->
+<button class="mt-1 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-3xl">expand_more</span>
+</button>
+<!-- Icon Box -->
+<div class="shrink-0 size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">rocket_launch</span>
+</div>
+<!-- Title & Meta -->
+<div class="flex flex-col">
+<h3 class="text-xl font-bold text-dark-text dark:text-white leading-tight">Launch Enterprise API Integration</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">ROCK</span>
+<span class="text-sm text-slate-text">Perfect Outcome: 5 Beta clients live by Sept 30.</span>
+</div>
+</div>
+</div>
+<!-- Status & Progress -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 w-full md:w-auto pl-14 md:pl-0">
+<!-- Owner -->
+<div class="flex items-center gap-2" title="Owner: Sarah J.">
+<div class="size-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold border border-white dark:border-slate-600 shadow-sm">SJ</div>
+<span class="text-sm font-medium text-slate-600 dark:text-slate-300 sm:hidden">Sarah J.</span>
+</div>
+<!-- Progress Bar -->
+<div class="flex flex-col gap-1 min-w-[140px]">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-500">Progress</span>
+<span class="text-dark-text dark:text-white">65%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<!-- Status Badge -->
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-sm font-bold whitespace-nowrap">
+<span class="material-symbols-outlined text-base">check_circle</span>
+                                On Track
+                            </div>
+</div>
+</div>
+<!-- NESTED CONTENT (Projects) -->
+<div class="bg-slate-50/50 dark:bg-slate-900/20 p-4 sm:p-6 flex flex-col gap-4 relative">
+<!-- Connecting Line Overlay -->
+<div class="absolute left-[38px] top-0 bottom-6 w-px bg-slate-300 dark:bg-slate-700 z-0"></div>
+<!-- LEVEL 2: PROJECT CARD 1 (Expanded) -->
+<div class="relative ml-4 sm:ml-12 z-10 flex flex-col gap-3">
+<!-- Horizontal Connector -->
+<div class="absolute -left-6 top-6 w-6 h-px bg-slate-300 dark:bg-slate-700"></div>
+<div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+<div class="flex items-center gap-3">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">expand_more</span>
+</button>
+<div class="p-2 rounded bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-xl">folder_open</span>
+</div>
+<div>
+<h4 class="text-base font-semibold text-dark-text dark:text-white">Backend Architecture Upgrade</h4>
+<p class="text-xs text-slate-500">July 1 - Aug 15 • 2 weeks remaining</p>
+</div>
+</div>
+<!-- Gantt Visual -->
+<div class="flex items-center gap-4 flex-1 justify-end max-w-sm">
+<div class="flex flex-col w-full gap-1">
+<div class="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+<span>Jul</span>
+<span>Aug</span>
+<span>Sep</span>
+</div>
+<div class="relative h-3 bg-slate-100 dark:bg-slate-700 rounded-sm w-full overflow-hidden">
+<!-- Timeline Bar -->
+<div class="absolute left-[10%] w-[45%] h-full bg-orange-400/80 rounded-sm"></div>
+<!-- Today Marker -->
+<div class="absolute left-[40%] top-0 bottom-0 w-0.5 bg-primary z-10" title="Today"></div>
+</div>
+</div>
+<div class="size-7 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-[10px] font-bold border border-white dark:border-slate-600 shadow-sm shrink-0">
+                                            MK
+                                        </div>
+</div>
+</div>
+<!-- LEVEL 3: TASKS (Sand) -->
+<div class="mt-4 pl-12 pr-2 flex flex-col gap-2 border-t border-slate-100 dark:border-slate-700/50 pt-4">
+<div class="flex items-center gap-3 group/task cursor-pointer">
+<div class="text-primary">
+<span class="material-symbols-outlined text-xl">check_box</span>
+</div>
+<span class="text-sm text-slate-500 line-through decoration-slate-400">Finalize database schema</span>
+<span class="ml-auto text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Done</span>
+</div>
+<div class="flex items-center gap-3 group/task cursor-pointer">
+<div class="text-slate-400 group-hover/task:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">check_box_outline_blank</span>
+</div>
+<span class="text-sm text-dark-text dark:text-white group-hover/task:text-primary transition-colors">Run stress tests on staging</span>
+<span class="ml-auto text-xs text-slate-400">Due Tomorrow</span>
+</div>
+<div class="flex items-center gap-3 group/task cursor-pointer">
+<div class="text-slate-400 group-hover/task:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">check_box_outline_blank</span>
+</div>
+<span class="text-sm text-dark-text dark:text-white group-hover/task:text-primary transition-colors">Draft API documentation v1</span>
+<span class="ml-auto text-xs text-slate-400">Due Friday</span>
+</div>
+</div>
+</div>
+</div>
+<!-- LEVEL 2: PROJECT CARD 2 (Collapsed) -->
+<div class="relative ml-4 sm:ml-12 z-10 flex flex-col gap-3">
+<!-- Horizontal Connector -->
+<div class="absolute -left-6 top-6 w-6 h-px bg-slate-300 dark:bg-slate-700"></div>
+<div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+<div class="flex items-center gap-3">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">chevron_right</span>
+</button>
+<div class="p-2 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-xl">dataset</span>
+</div>
+<div>
+<h4 class="text-base font-semibold text-dark-text dark:text-white">Client Portal UI Implementation</h4>
+<p class="text-xs text-slate-500">Aug 1 - Sept 15 • Not started</p>
+</div>
+</div>
+<!-- Gantt Visual -->
+<div class="flex items-center gap-4 flex-1 justify-end max-w-sm opacity-60">
+<div class="flex flex-col w-full gap-1">
+<div class="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+<span>Jul</span>
+<span>Aug</span>
+<span>Sep</span>
+</div>
+<div class="relative h-3 bg-slate-100 dark:bg-slate-700 rounded-sm w-full overflow-hidden">
+<!-- Timeline Bar -->
+<div class="absolute left-[50%] w-[35%] h-full bg-slate-300 dark:bg-slate-600 rounded-sm"></div>
+</div>
+</div>
+<div class="size-7 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-[10px] font-bold border border-white dark:border-slate-600 shadow-sm shrink-0">
+                                            AL
+                                        </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- LEVEL 1: ROCK CARD 2 (Collapsed) -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-lg">
+<!-- Rock Header -->
+<div class="p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<div class="flex items-start gap-4 flex-1">
+<!-- Toggle Icon -->
+<button class="mt-1 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-3xl">chevron_right</span>
+</button>
+<!-- Icon Box -->
+<div class="shrink-0 size-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300">
+<span class="material-symbols-outlined text-2xl">campaign</span>
+</div>
+<!-- Title & Meta -->
+<div class="flex flex-col">
+<h3 class="text-xl font-bold text-dark-text dark:text-white leading-tight">Q3 Marketing Blitz</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">ROCK</span>
+<span class="text-sm text-slate-text">Perfect Outcome: 1000 MQLs generated.</span>
+</div>
+</div>
+</div>
+<!-- Status & Progress -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 w-full md:w-auto pl-14 md:pl-0">
+<!-- Owner -->
+<div class="flex items-center gap-2" title="Owner: David K.">
+<div class="size-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold border border-white dark:border-slate-600 shadow-sm">DK</div>
+<span class="text-sm font-medium text-slate-600 dark:text-slate-300 sm:hidden">David K.</span>
+</div>
+<!-- Progress Bar -->
+<div class="flex flex-col gap-1 min-w-[140px]">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-500">Progress</span>
+<span class="text-dark-text dark:text-white">35%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-amber-400 rounded-full" style="width: 35%"></div>
+</div>
+</div>
+<!-- Status Badge -->
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-sm font-bold whitespace-nowrap">
+<span class="material-symbols-outlined text-base">warning</span>
+                                At Risk
+                            </div>
+</div>
+</div>
+</div>
+<!-- LEVEL 1: ROCK CARD 3 (Collapsed) -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-lg">
+<!-- Rock Header -->
+<div class="p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<div class="flex items-start gap-4 flex-1">
+<!-- Toggle Icon -->
+<button class="mt-1 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-3xl">chevron_right</span>
+</button>
+<!-- Icon Box -->
+<div class="shrink-0 size-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300">
+<span class="material-symbols-outlined text-2xl">diversity_3</span>
+</div>
+<!-- Title & Meta -->
+<div class="flex flex-col">
+<h3 class="text-xl font-bold text-dark-text dark:text-white leading-tight">Expand Sales Team</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">ROCK</span>
+<span class="text-sm text-slate-text">Perfect Outcome: 3 AEs and 2 SDRs hired.</span>
+</div>
+</div>
+</div>
+<!-- Status & Progress -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 w-full md:w-auto pl-14 md:pl-0">
+<!-- Owner -->
+<div class="flex items-center gap-2" title="Owner: Maria S.">
+<div class="size-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold border border-white dark:border-slate-600 shadow-sm">MS</div>
+<span class="text-sm font-medium text-slate-600 dark:text-slate-300 sm:hidden">Maria S.</span>
+</div>
+<!-- Progress Bar -->
+<div class="flex flex-col gap-1 min-w-[140px]">
+<div class="flex justify-between text-xs font-medium">
+<span class="text-slate-500">Progress</span>
+<span class="text-dark-text dark:text-white">90%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 rounded-full" style="width: 90%"></div>
+</div>
+</div>
+<!-- Status Badge -->
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-sm font-bold whitespace-nowrap">
+<span class="material-symbols-outlined text-base">check_circle</span>
+                                On Track
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty State / Add New Placeholder -->
+<div class="mt-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+<div class="size-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-3">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+<h3 class="text-lg font-bold text-dark-text dark:text-white">Add Another Rock</h3>
+<p class="text-slate-500 text-sm max-w-sm mt-1">Define a new quarterly goal to track. Remember, less is more—aim for 3-7 Rocks per quarter.</p>
+</div>
+</main>
+</div>
+</body></html>

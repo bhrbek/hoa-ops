@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Vista - Main Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "secondary": "#587295",
+                        "tertiary": "#8ba3c7",
+                        "success": "#2e7d32",
+                        "warning": "#ed6c02",
+                        "error": "#d32f2f",
+                        "background-light": "#f6f8fb", // Glacier white/blue tint
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2332",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#2d3748",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
+                    },
+                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'card': '0 2px 10px rgba(0, 0, 0, 0.02)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        /* Hide scrollbar for clean look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Navigation -->
+<header class="sticky top-0 z-50 bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-md border-b border-border-light dark:border-border-dark px-6 py-4">
+<div class="max-w-[1400px] mx-auto flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
+<span class="material-symbols-outlined text-xl">landscape</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">The Vista</h1>
+</div>
+<nav class="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
+<a class="px-4 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-slate-700 shadow-sm text-primary transition-all" href="#">Dashboard</a>
+<a class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Projects</a>
+<a class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Sales</a>
+<a class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Settings</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-border-light dark:border-border-dark">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold leading-none">Alex M.</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">VP of Sales</p>
+</div>
+<div class="size-10 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-slate-700 shadow-md" data-alt="Profile picture of a professional man" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB8eKF7Kmp89caghFsCcZxYLEJ5ZoxXw6edS4_ns_IhDuUXiEqqRaeGJVbzJEiZc-Ko-mgZy2UUJ3xYfJzNGuxhclqMYdS9h6JZmR95k4l_XsfUEfRHbWB-PakXGmMzlY2SxrHbct7hLqz0oiXy7pPbJCIBJ1CuzIcoE7KaZ6Vvg48N_ufdLz2fVLRij0xbzX4X9g5Cvc_8T5s4L3tpvCciqeklZMabDQX2H3e8M_j0uXWw0gW067GclXLb8t_9rdZJaBRD3nRxg70');"></div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 space-y-8">
+<!-- Row 1: The Scorecard -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">The Scorecard</h2>
+<div class="flex gap-2">
+<span class="text-xs font-medium px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">Live Data</span>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-border-light dark:border-border-dark shadow-soft hover:shadow-lg transition-all group relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-primary/20"></div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Revenue Influenced</p>
+<div class="mt-2 flex items-baseline gap-2">
+<h3 class="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">$1.2M</h3>
+<span class="text-xs font-bold text-success flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span> 12%
+                        </span>
+</div>
+<div class="mt-4 h-8 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+<!-- CSS-only Sparkline approximation -->
+<div class="flex items-end h-full gap-1">
+<div class="w-full bg-primary/20 h-[40%] rounded-t-sm"></div>
+<div class="w-full bg-primary/30 h-[60%] rounded-t-sm"></div>
+<div class="w-full bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="w-full bg-primary/50 h-[80%] rounded-t-sm"></div>
+<div class="w-full bg-primary h-[100%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-border-light dark:border-border-dark shadow-soft hover:shadow-lg transition-all group relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-primary/20"></div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">GP Influenced</p>
+<div class="mt-2 flex items-baseline gap-2">
+<h3 class="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">$450k</h3>
+<span class="text-xs font-bold text-success flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span> 5%
+                        </span>
+</div>
+<div class="mt-4 h-8 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+<div class="flex items-end h-full gap-1">
+<div class="w-full bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="w-full bg-primary/30 h-[50%] rounded-t-sm"></div>
+<div class="w-full bg-primary/50 h-[40%] rounded-t-sm"></div>
+<div class="w-full bg-primary/20 h-[70%] rounded-t-sm"></div>
+<div class="w-full bg-primary h-[85%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-border-light dark:border-border-dark shadow-soft hover:shadow-lg transition-all group relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-primary/20"></div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Engagements</p>
+<div class="mt-2 flex items-baseline gap-2">
+<h3 class="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">12</h3>
+<span class="text-xs font-bold text-error flex items-center">
+<span class="material-symbols-outlined text-sm">trending_down</span> -2
+                        </span>
+</div>
+<div class="mt-4 h-8 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+<div class="flex items-end h-full gap-1">
+<div class="w-full bg-secondary/20 h-[80%] rounded-t-sm"></div>
+<div class="w-full bg-secondary/30 h-[60%] rounded-t-sm"></div>
+<div class="w-full bg-secondary/20 h-[70%] rounded-t-sm"></div>
+<div class="w-full bg-secondary/50 h-[40%] rounded-t-sm"></div>
+<div class="w-full bg-secondary h-[50%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-border-light dark:border-border-dark shadow-soft hover:shadow-lg transition-all group relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-primary/20"></div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Rock Velocity</p>
+<div class="mt-2 flex items-baseline gap-2">
+<h3 class="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">92%</h3>
+<span class="text-xs font-bold text-success flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span> 8%
+                        </span>
+</div>
+<div class="mt-4 h-8 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+<div class="flex items-end h-full gap-1">
+<div class="w-full bg-tertiary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-full bg-tertiary/30 h-[40%] rounded-t-sm"></div>
+<div class="w-full bg-tertiary/20 h-[60%] rounded-t-sm"></div>
+<div class="w-full bg-tertiary/50 h-[80%] rounded-t-sm"></div>
+<div class="w-full bg-tertiary h-[95%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-border-light dark:border-border-dark shadow-soft hover:shadow-lg transition-all group relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-primary/20"></div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pipeline</p>
+<div class="mt-2 flex items-baseline gap-2">
+<h3 class="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">$3.5M</h3>
+<span class="text-xs font-bold text-success flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span> 15%
+                        </span>
+</div>
+<div class="mt-4 h-8 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+<div class="flex items-end h-full gap-1">
+<div class="w-full bg-success/20 h-[50%] rounded-t-sm"></div>
+<div class="w-full bg-success/30 h-[60%] rounded-t-sm"></div>
+<div class="w-full bg-success/20 h-[40%] rounded-t-sm"></div>
+<div class="w-full bg-success/50 h-[70%] rounded-t-sm"></div>
+<div class="w-full bg-success h-[90%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Row 2: Strategy & Execution -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Left 2/3: Active Rocks -->
+<div class="lg:col-span-2 flex flex-col h-full">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Strategy &amp; Execution</h2>
+<button class="text-sm text-primary font-semibold hover:text-primary/80">View All Rocks</button>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl shadow-soft overflow-hidden flex-1">
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800 border-b border-border-light dark:border-border-dark">
+<th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rock Title</th>
+<th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-32">Status</th>
+<th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Supporting Projects</th>
+<th class="px-6 py-4 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark">
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-xl">flag</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Q3 Enterprise Expansion</p>
+<p class="text-xs text-slate-500 mt-0.5">Owner: Sarah J.</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900 w-fit">
+<div class="size-2.5 rounded-full bg-green-500 animate-pulse"></div>
+<span class="text-xs font-semibold text-green-700 dark:text-green-400">On Track</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-sm text-slate-400">subdirectory_arrow_right</span>
+                                                Salesforce Integration
+                                            </div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-sm text-slate-400">subdirectory_arrow_right</span>
+                                                Ent. Sales Playbook
+                                            </div>
+</div>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-xl">person_add</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Hire Sales VP</p>
+<p class="text-xs text-slate-500 mt-0.5">Owner: Alex M.</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 w-fit">
+<div class="size-2.5 rounded-full bg-red-500"></div>
+<span class="text-xs font-semibold text-red-700 dark:text-red-400">At Risk</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-sm text-slate-400">subdirectory_arrow_right</span>
+                                                Finalize Comp Plan
+                                            </div>
+</div>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-xl">handshake</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Client Retention</p>
+<p class="text-xs text-slate-500 mt-0.5">Owner: Mike T.</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900 w-fit">
+<div class="size-2.5 rounded-full bg-yellow-500"></div>
+<span class="text-xs font-semibold text-yellow-700 dark:text-yellow-400">Needs Attn</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-sm text-slate-400">subdirectory_arrow_right</span>
+                                                QBR Decks Prep
+                                            </div>
+<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-sm text-slate-400">subdirectory_arrow_right</span>
+                                                Satisfaction Survey
+                                            </div>
+</div>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right 1/3: My Capacity -->
+<div class="flex flex-col h-full">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">My Capacity</h2>
+<span class="text-xs text-slate-400">Updated today</span>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl shadow-soft p-6 flex-1 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-sm font-medium text-slate-500 dark:text-slate-400">Current Load</span>
+<span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded uppercase">Healthy</span>
+</div>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-6">85%</h3>
+</div>
+<div class="flex gap-4 items-end justify-center h-48 w-full relative px-8">
+<!-- Stacked Bar / Liquid Gauge Representation -->
+<div class="w-full max-w-[120px] h-full flex flex-col-reverse rounded-t-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-inner">
+<!-- Background Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-10 p-0">
+<div class="border-b border-white/50 dark:border-slate-600/50 w-full h-[25%]"></div>
+<div class="border-b border-white/50 dark:border-slate-600/50 w-full h-[25%]"></div>
+<div class="border-b border-white/50 dark:border-slate-600/50 w-full h-[25%]"></div>
+</div>
+<!-- Segments -->
+<!-- Engagements (Green - Bottom) -->
+<div class="w-full bg-emerald-500 transition-all hover:bg-emerald-400 relative group/seg" style="height: 30%">
+<div class="absolute -right-24 top-1/2 -translate-y-1/2 opacity-0 group-hover/seg:opacity-100 transition-opacity bg-slate-800 text-white text-xs px-2 py-1 rounded z-20 whitespace-nowrap">
+                                    Engagements: 30%
+                                </div>
+</div>
+<!-- Rocks (Granite/Grey - Middle) -->
+<div class="w-full bg-slate-500 dark:bg-slate-600 transition-all hover:bg-slate-400 relative group/seg" style="height: 45%">
+<div class="absolute -right-24 top-1/2 -translate-y-1/2 opacity-0 group-hover/seg:opacity-100 transition-opacity bg-slate-800 text-white text-xs px-2 py-1 rounded z-20 whitespace-nowrap">
+                                    Rocks: 45%
+                                </div>
+</div>
+<!-- Admin (Water/Blue - Top) -->
+<div class="w-full bg-primary transition-all hover:bg-blue-500 relative group/seg" style="height: 10%">
+<div class="absolute -right-24 top-1/2 -translate-y-1/2 opacity-0 group-hover/seg:opacity-100 transition-opacity bg-slate-800 text-white text-xs px-2 py-1 rounded z-20 whitespace-nowrap">
+                                    Admin: 10%
+                                </div>
+</div>
+</div>
+<!-- Legend -->
+<div class="flex flex-col gap-3 justify-center text-sm">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary"></div>
+<span class="text-slate-600 dark:text-slate-300 text-xs">Admin (10%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-slate-500 dark:bg-slate-600"></div>
+<span class="text-slate-600 dark:text-slate-300 text-xs">Rocks (45%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-emerald-500"></div>
+<span class="text-slate-600 dark:text-slate-300 text-xs">Engage (30%)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Row 3: My Stream -->
+<section class="flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">My Stream</h2>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg shadow-lg shadow-primary/30 transition-all active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+<span class="text-sm font-bold">Log Engagement</span>
+</button>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl shadow-soft overflow-hidden">
+<!-- Tabs -->
+<div class="border-b border-border-light dark:border-border-dark bg-slate-50/50 dark:bg-slate-800/50 px-6 pt-4 flex gap-6">
+<button class="pb-4 px-2 border-b-2 border-primary text-primary font-bold text-sm">Sand (Tasks)</button>
+<button class="pb-4 px-2 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium text-sm transition-colors">Recent Logs</button>
+<button class="pb-4 px-2 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium text-sm transition-colors">Notes</button>
+</div>
+<!-- Content Area -->
+<div class="divide-y divide-border-light dark:divide-border-dark">
+<!-- Item 1 -->
+<div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-start gap-4">
+<div class="mt-1">
+<input class="size-5 rounded border-slate-300 text-primary focus:ring-primary/20" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Follow up with Acme Corp regarding Q3 expansion</h4>
+<p class="text-xs text-slate-500 mt-1">Due today • High Priority</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase rounded">Email</span>
+<button class="text-slate-400 hover:text-primary p-1"><span class="material-symbols-outlined text-lg">edit</span></button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-start gap-4">
+<div class="mt-1">
+<input class="size-5 rounded border-slate-300 text-primary focus:ring-primary/20" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Review Q4 hiring plan draft</h4>
+<p class="text-xs text-slate-500 mt-1">Due tomorrow</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase rounded">Review</span>
+<button class="text-slate-400 hover:text-primary p-1"><span class="material-symbols-outlined text-lg">edit</span></button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-start gap-4 opacity-60">
+<div class="mt-1">
+<input checked="" class="size-5 rounded border-slate-300 text-primary focus:ring-primary/20" type="checkbox"/>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-slate-900 dark:text-white line-through">Weekly Sales Sync</h4>
+<p class="text-xs text-slate-500 mt-1">Completed 2 hours ago</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase rounded">Meeting</span>
+</div>
+</div>
+</div>
+<div class="p-3 bg-slate-50 dark:bg-slate-800/50 text-center">
+<button class="text-xs font-semibold text-primary hover:text-primary/80">View all tasks</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer decoration -->
+<div class="h-2 w-full bg-gradient-to-r from-primary via-tertiary to-secondary mt-auto"></div>
+</body></html>

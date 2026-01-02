@@ -1,34 +1,30 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { AppShell } from "@/components/shell/app-shell"
 
-const geistSans = Geist({
+const inter = Inter({
+  subsets: ["latin"],
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+})
 
 export const metadata: Metadata = {
-  title: "The Jar - Strategic Operating System",
-  description: "Capacity management and strategic planning for Pre-Sales and Advisory teams",
-};
+  title: "The Jar | Strategic Operating System",
+  description: "Internal Strategic Operating System for Technical Solutions Architects",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en">
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <AppShell>
+          {children}
+        </AppShell>
       </body>
     </html>
-  );
+  )
 }

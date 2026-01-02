@@ -1,239 +1,66 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@plugin "tailwindcss-animate";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  /* Sidebar */
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-
-  /* Charts */
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-
-  /* Base */
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-
-  /* Radius */
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
-
-  /* Custom Jar Semantic Colors */
-  --color-rock: var(--rock);
-  --color-rock-foreground: var(--rock-foreground);
-  --color-sand: var(--sand);
-  --color-sand-foreground: var(--sand-foreground);
-  --color-water: var(--water);
-  --color-water-foreground: var(--water-foreground);
-  --color-beacon: var(--beacon);
-  --color-beacon-glow: var(--beacon-glow);
-  --color-pebble: var(--pebble);
-  --color-pebble-foreground: var(--pebble-foreground);
-  --color-shield: var(--shield);
-  --color-overload: var(--overload);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-}
-
-:root {
-  --radius: 0.5rem;
-
-  /* Light mode (not primary for this app) */
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-
-  /* Charts */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-
-  /* Sidebar */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-
-  /* Jar Semantic Colors - Light */
-  --rock: #1e293b;
-  --rock-foreground: #f8fafc;
-  --sand: #e7e5e4;
-  --sand-foreground: #1c1917;
-  --water: #3b82f6;
-  --water-foreground: #ffffff;
-  --beacon: #f59e0b;
-  --beacon-glow: rgba(245, 158, 11, 0.5);
-  --pebble: #3b82f6;
-  --pebble-foreground: #ffffff;
-  --shield: #3b82f6;
-  --overload: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
-}
-
-.dark {
-  /* Dark mode - Primary theme for The Jar */
-  --background: #0a0f1a;
-  --foreground: #f1f5f9;
-  --card: #111827;
-  --card-foreground: #f1f5f9;
-  --popover: #111827;
-  --popover-foreground: #f1f5f9;
-  --primary: #f1f5f9;
-  --primary-foreground: #0f172a;
-  --secondary: #1e293b;
-  --secondary-foreground: #f1f5f9;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f1f5f9;
-  --destructive: #ef4444;
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #3b82f6;
-
-  /* Charts */
-  --chart-1: #3b82f6;
-  --chart-2: #22c55e;
-  --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
-  --chart-5: #ef4444;
-
-  /* Sidebar - Dark slate */
-  --sidebar: #020617;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #3b82f6;
-  --sidebar-primary-foreground: #f1f5f9;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f1f5f9;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #3b82f6;
-
-  /* Jar Semantic Colors - Dark */
-  --rock: #334155;
-  --rock-foreground: #f8fafc;
-  --sand: #d6d3d1;
-  --sand-foreground: #1c1917;
-  --water: #3b82f6;
-  --water-foreground: #ffffff;
-  --beacon: #f59e0b;
-  --beacon-glow: rgba(245, 158, 11, 0.4);
-  --pebble: #3b82f6;
-  --pebble-foreground: #ffffff;
-  --shield: #3b82f6;
-  --overload: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
   }
 }
 
-/* Custom animations for The Jar */
-@keyframes pulse-beacon {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 var(--beacon-glow);
-  }
-  50% {
-    opacity: 0.8;
-    box-shadow: 0 0 20px 10px var(--beacon-glow);
-  }
+/* Glacier Modern - Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@keyframes shield-glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 2px var(--shield));
-  }
-  50% {
-    filter: drop-shadow(0 0 8px var(--shield));
-  }
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.animate-beacon {
-  animation: pulse-beacon 2s ease-in-out infinite;
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
-.animate-shield {
-  animation: shield-glow 2s ease-in-out infinite;
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-/* Water stripe pattern for capacity bar */
-.water-stripes {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--water),
-    var(--water) 4px,
-    transparent 4px,
-    transparent 8px
-  );
+/* Hide scrollbar for clean look in certain areas */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-/* Beacon glow effect for columns */
-.beacon-column {
-  background: linear-gradient(180deg, var(--beacon-glow) 0%, transparent 100%);
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
