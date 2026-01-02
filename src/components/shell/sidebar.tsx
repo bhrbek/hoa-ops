@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { NAV_ITEMS } from '@/lib/constants'
 import { JarGauge } from './jar-gauge'
 import { UserNav } from './user-nav'
+import { useJar } from '@/contexts/jar-context'
 import {
   LayoutDashboard,
   Activity,
@@ -13,6 +14,7 @@ import {
   Mountain,
   BarChart3,
   Beaker,
+  Settings,
 } from 'lucide-react'
 
 const iconMap = {
@@ -21,10 +23,13 @@ const iconMap = {
   Grid3X3,
   Mountain,
   BarChart3,
+  Settings,
 }
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user } = useJar()
+  const isAdmin = user?.role === 'admin'
 
   return (
     <div className="flex h-screen w-64 flex-col bg-sidebar border-r border-sidebar-border">
@@ -68,6 +73,33 @@ export function Sidebar() {
             )
           })}
         </ul>
+
+        {/* Admin Section */}
+        {isAdmin && (
+          <>
+            <div className="mt-6 mb-2 px-3">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Admin
+              </span>
+            </div>
+            <ul className="space-y-1">
+              <li>
+                <Link
+                  href="/settings/admin"
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    pathname === '/settings/admin'
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  )}
+                >
+                  <Settings className="h-4 w-4" />
+                  Admin Settings
+                </Link>
+              </li>
+            </ul>
+          </>
+        )}
       </nav>
 
       {/* Footer with Jar Gauge and User */}

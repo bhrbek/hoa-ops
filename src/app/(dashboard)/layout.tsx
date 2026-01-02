@@ -1,5 +1,6 @@
 import { JarProvider } from '@/contexts/jar-context'
 import { Sidebar } from '@/components/shell/sidebar'
+import { VersionBadge } from '@/components/shell/version-badge'
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-auto">
           {children}
         </main>
+        <VersionBadge />
       </div>
     </JarProvider>
   )
