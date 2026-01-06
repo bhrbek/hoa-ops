@@ -305,7 +305,11 @@ export default function AdminSettingsPage() {
       setNewMemberRole("tsa")
     } catch (error) {
       console.error("Failed to add member:", error)
-      alert((error as Error).message)
+      // Extract meaningful error message
+      const errorMessage = error instanceof Error
+        ? (error.message.includes('Server Components') ? 'User may already be a member of this team' : error.message)
+        : 'Failed to add member'
+      alert(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -670,8 +674,14 @@ export default function AdminSettingsPage() {
                     <div className="border-t border-slate-200 bg-slate-50 p-3">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-slate-700">Team Members</span>
-                        {isAddingMember !== team.id && (
-                          <Button size="sm" variant="outline" onClick={() => setIsAddingMember(team.id)}>
+                        {isAddingMember !== team.id && teamMembers[team.id] && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsAddingMember(team.id)}
+                            disabled={getAvailableProfiles(team.id).length === 0}
+                            title={getAvailableProfiles(team.id).length === 0 ? "All users are already members" : undefined}
+                          >
                             <UserPlus className="h-4 w-4 mr-1" />
                             Add Member
                           </Button>
@@ -750,6 +760,9 @@ export default function AdminSettingsPage() {
                         ))}
                         {teamMembers[team.id]?.length === 0 && (
                           <p className="text-sm text-slate-500 text-center py-2">No members yet</p>
+                        )}
+                        {teamMembers[team.id] && teamMembers[team.id].length > 0 && getAvailableProfiles(team.id).length === 0 && (
+                          <p className="text-xs text-slate-400 text-center pt-2">All organization users are already members of this team</p>
                         )}
                         {!teamMembers[team.id] && (
                           <div className="flex justify-center py-2">
