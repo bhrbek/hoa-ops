@@ -167,7 +167,16 @@ export async function deleteTeam(teamId: string): Promise<void> {
  * Get team members
  */
 export async function getTeamMembers(teamId: string): Promise<(TeamMembership & { user: Profile })[]> {
-  await requireTeamAccess(teamId)
+  console.log('[getTeamMembers] Starting for team:', teamId)
+
+  try {
+    await requireTeamAccess(teamId)
+    console.log('[getTeamMembers] Access check passed')
+  } catch (err) {
+    console.error('[getTeamMembers] Access check failed:', err)
+    throw err
+  }
+
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
@@ -180,8 +189,14 @@ export async function getTeamMembers(teamId: string): Promise<(TeamMembership & 
     .is('deleted_at', null)
     .order('created_at')
 
+  console.log('[getTeamMembers] Query result:', {
+    memberCount: data?.length ?? 0,
+    error: error?.message,
+    errorCode: error?.code
+  })
+
   if (error) {
-    console.error('Error fetching team members:', error)
+    console.error('[getTeamMembers] Query error:', error)
     throw new Error('Failed to fetch team members')
   }
 

@@ -126,8 +126,8 @@ export async function getActiveTeam(): Promise<ActiveTeamContext | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Get team with org
-  const { data: team } = await (supabase as any)
+  // Get team with org - use maybeSingle() to avoid throwing on 0 rows
+  const { data: team, error: teamError } = await (supabase as any)
     .from('teams')
     .select(`
       *,
@@ -135,9 +135,17 @@ export async function getActiveTeam(): Promise<ActiveTeamContext | null> {
     `)
     .eq('id', activeTeamId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
-  if (!team) return null
+  if (teamError) {
+    console.error('[getActiveTeam] Team query error:', teamError)
+    return null
+  }
+
+  if (!team) {
+    console.log('[getActiveTeam] Team not found for id:', activeTeamId)
+    return null
+  }
 
   // Get user's role in this team - use maybeSingle() as user might not be a member
   const { data: membership } = await (supabase as any)

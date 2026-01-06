@@ -82,8 +82,15 @@ export async function getActiveEngagements(options?: {
   offset?: number
   rockId?: string
 }): Promise<EngagementWithRelations[]> {
+  console.log('[getActiveEngagements] Starting with options:', options)
+
   const activeTeam = await getActiveTeam()
-  if (!activeTeam?.team?.id) return [] // Return empty instead of throwing
+  console.log('[getActiveEngagements] Active team:', activeTeam?.team?.id)
+
+  if (!activeTeam?.team?.id) {
+    console.log('[getActiveEngagements] No active team, returning empty')
+    return []
+  }
 
   return getEngagements(activeTeam.team.id, options)
 }
@@ -361,8 +368,13 @@ export async function getActiveEngagementStats(): Promise<{
   engagementCount: number
   workshopCount: number
 }> {
+  console.log('[getActiveEngagementStats] Starting')
+
   const activeTeam = await getActiveTeam()
+  console.log('[getActiveEngagementStats] Active team:', activeTeam?.team?.id)
+
   if (!activeTeam?.team?.id) {
+    console.log('[getActiveEngagementStats] No active team, returning zeros')
     return { totalRevenue: 0, totalGP: 0, engagementCount: 0, workshopCount: 0 }
   }
 

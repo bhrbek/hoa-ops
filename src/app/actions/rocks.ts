@@ -11,7 +11,16 @@ import type { Rock, RockWithProjects, RockWithBuildSignals, RockWithAll } from '
  * Get rocks for a team
  */
 export async function getRocks(teamId: string, quarter?: string): Promise<RockWithProjects[]> {
-  await requireTeamAccess(teamId)
+  console.log('[getRocks] Starting for team:', teamId, 'quarter:', quarter)
+
+  try {
+    await requireTeamAccess(teamId)
+    console.log('[getRocks] Access check passed')
+  } catch (err) {
+    console.error('[getRocks] Access check failed:', err)
+    throw err
+  }
+
   const supabase = await createClient()
 
   let query = (supabase as any)
@@ -43,8 +52,15 @@ export async function getRocks(teamId: string, quarter?: string): Promise<RockWi
  * Get rocks for the active team
  */
 export async function getActiveRocks(quarter?: string): Promise<RockWithProjects[]> {
+  console.log('[getActiveRocks] Starting, quarter:', quarter)
+
   const activeTeam = await getActiveTeam()
-  if (!activeTeam?.team?.id) return [] // Return empty instead of throwing
+  console.log('[getActiveRocks] Active team:', activeTeam?.team?.id)
+
+  if (!activeTeam?.team?.id) {
+    console.log('[getActiveRocks] No active team, returning empty')
+    return []
+  }
 
   return getRocks(activeTeam.team.id, quarter)
 }
