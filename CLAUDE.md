@@ -1,4 +1,4 @@
-# THE JAR – SYSTEM CONTRACT FOR CLAUDE
+# HEADWATERS – SYSTEM CONTRACT FOR CLAUDE
 
 You are building an Enterprise Operating System (EOS-inspired) application for a Pre-Sales Technical Solutions Architect (TSA) organization.
 
@@ -268,7 +268,7 @@ import { getAssets } from '@/app/actions/assets'
 |-------|------|---------|
 | `/` | Vista | Dashboard overview |
 | `/stream` | Stream | Engagement logging |
-| `/climb` | Climb | Rocks & Projects |
+| `/rocks` | Rocks | Rocks & Projects |
 | `/commitment-board` | Commitments | Weekly execution |
 | `/reports` | Reports | Business observability |
 | `/login` | Login | Authentication |
@@ -292,12 +292,7 @@ import { getAssets } from '@/app/actions/assets'
 
 ## DEVELOPMENT NOTES
 
-### AI-Assisted Development
-This project uses Claude Code for development assistance including:
-- Phase 4 UI Components implementation
-- Documentation creation and maintenance
-- Code reviews and architecture decisions
-
-### Contributors
-- Human developers: Primary architecture and product decisions
-- Claude (Anthropic): Implementation assistance for server actions, UI components, and documentation
+### Git Commit Guidelines
+- NEVER add "Generated with Claude Code" or similar attribution to commits
+- NEVER add "Co-Authored-By: Claude" or any AI co-author attribution
+- Commit messages should describe the changes, not who/what made them
