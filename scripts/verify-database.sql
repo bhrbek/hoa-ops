@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Database Verification Script
+-- HEADWATERS - Database Verification Script
 -- Run this in Supabase Dashboard SQL Editor
 -- ============================================
 

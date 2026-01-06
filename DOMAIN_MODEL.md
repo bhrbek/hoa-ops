@@ -1,4 +1,4 @@
-# THE JAR - DOMAIN MODEL
+# HEADWATERS - DOMAIN MODEL
 
 This document defines the canonical domain concepts used throughout the system.
 Each term has an explicit meaning and explicit non-meanings.
@@ -7,7 +7,7 @@ Each term has an explicit meaning and explicit non-meanings.
 
 ## Organization (Org)
 
-A company or entity that uses The Jar. Contains one or more Teams.
+A company or entity that uses Headwaters. Contains one or more Teams.
 
 - Has Org Admins who can manage all teams
 - Customers are scoped to the Org (shared across teams)
@@ -192,7 +192,7 @@ Possible states:
 
 ---
 
-## Capacity (The Jar)
+## Capacity (Headwaters)
 
 A visual representation of available weekly effort.
 

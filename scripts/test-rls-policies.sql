@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - RLS Policy Testing Script
+-- HEADWATERS - RLS Policy Testing Script
 -- Run this in Supabase Dashboard SQL Editor
 -- ============================================
 --

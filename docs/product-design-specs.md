@@ -1,4 +1,4 @@
-# Product Design Specification: "The Jar"
+# Product Design Specification: "Headwaters"
 
 **Version:** 2.0 (Headwaters Multi-Team Release)
 **Use:** Internal Tool (Pre-Sales/Advisory Ops)
@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary
 
-"The Jar" is a Strategic Operating System designed for high-performing Pre-Sales and Advisory teams. Unlike traditional Project Management tools (which focus on task completion), The Jar focuses on **Capacity Physics** and **Strategic Signaling**.
+"Headwaters" is a Strategic Operating System designed for high-performing Pre-Sales and Advisory teams. Unlike traditional Project Management tools (which focus on task completion), Headwaters focuses on **Capacity Physics** and **Strategic Signaling**.
 
 ### The Core Philosophy
 
@@ -17,7 +17,7 @@
 
 ### Headwaters: Multi-Team Architecture
 
-Headwaters extends The Jar to support multiple teams within an organization:
+Headwaters extends Headwaters to support multiple teams within an organization:
 - **Organizations** contain multiple **Teams**
 - Teams are isolated but share org-level resources (Customers)
 - Role-based access: Org Admin, Team Manager, TSA
@@ -48,9 +48,9 @@ Headwaters extends The Jar to support multiple teams within an organization:
 
 ---
 
-## 3. The Jar Mental Model
+## 3. Headwaters Mental Model
 
-### The Jar Metaphor
+### Headwaters Metaphor
 
 | Element | Represents | Scope |
 |---------|------------|-------|
@@ -281,7 +281,7 @@ When a commitment slips (not done by end of week):
 ### View A: The App Shell (Navigation)
 
 - **Sidebar (Left):** Dark Mode (Slate-950)
-  - **Header:** Icon (Mountain) + "THE JAR"
+  - **Header:** Icon (Mountain) + "HEADWATERS"
   - **Team Selector:** Dropdown for switching active team
   - **Nav:** Vista, Stream, Climb, Commitment Board, Reports
   - **Footer:** User Profile, "Jar Gauge" (utilization %)

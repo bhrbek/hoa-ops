@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Database Schema
+-- HEADWATERS - Database Schema
 -- Strategic Operating System for TSAs
 -- ============================================
 

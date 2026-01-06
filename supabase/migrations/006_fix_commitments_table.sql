@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Fix Commitments Table Structure
+-- HEADWATERS - Fix Commitments Table Structure
 -- Commitments require: Project + Build Signal
 -- ============================================
 

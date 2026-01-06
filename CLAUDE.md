@@ -76,7 +76,7 @@ There are two distinct lenses that MUST NOT be merged:
 - Build Signals
 - Projects
 - Commitments
-- Capacity (The Jar)
+- Capacity (Headwaters)
 
 ### Business Observability Lens
 - Engagement trends
@@ -116,7 +116,7 @@ All primary tables use soft delete (`deleted_at`, `deleted_by`). No hard deletes
 ```bash
 supabase projects list
 ```
-Look for `●` next to "The Jar".
+Look for `●` next to "Headwaters".
 
 ### Running Migrations
 

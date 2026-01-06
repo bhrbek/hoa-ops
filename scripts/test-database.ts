@@ -313,7 +313,7 @@ async function testIndexes() {
 }
 
 async function main() {
-  log('🧪 THE JAR - Database Testing Suite')
+  log('🧪 HEADWATERS - Database Testing Suite')
   log('=' .repeat(50))
 
   try {

@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Build Signals Table
+-- HEADWATERS - Build Signals Table
 -- Measurable outcomes that track execution truth
 -- ============================================
 

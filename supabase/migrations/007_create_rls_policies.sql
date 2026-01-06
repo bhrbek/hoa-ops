@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - RLS Policies using Helper Functions
+-- HEADWATERS - RLS Policies using Helper Functions
 -- Replaces old policies with team/org scoped versions
 -- ============================================
 

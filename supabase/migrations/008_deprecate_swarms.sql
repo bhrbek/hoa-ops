@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Deprecate Swarms Table
+-- HEADWATERS - Deprecate Swarms Table
 -- Swarms functionality replaced by Enablement Events
 -- ============================================
 

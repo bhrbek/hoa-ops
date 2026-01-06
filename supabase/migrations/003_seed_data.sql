@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Seed Data
+-- HEADWATERS - Seed Data
 -- Reference data for domains and OEMs
 -- ============================================
 

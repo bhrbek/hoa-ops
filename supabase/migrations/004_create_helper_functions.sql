@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - RLS Helper Functions
+-- HEADWATERS - RLS Helper Functions
 -- MUST RUN BEFORE ANY RLS POLICIES THAT USE THESE
 -- ============================================
 

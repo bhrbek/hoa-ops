@@ -1,6 +1,6 @@
 # PRD: Headwaters Multi-Team Architecture
 
-**Product:** The Jar
+**Product:** Headwaters
 **Feature:** Headwaters (Multi-Team Support)
 **Version:** 2.0
 **Date:** January 2026
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-Headwaters extends The Jar from a single-team tool to a multi-organization, multi-team platform. This enables enterprise deployment where multiple TSA teams can operate independently while sharing org-level resources like customers.
+Headwaters extends Headwaters from a single-team tool to a multi-organization, multi-team platform. This enables enterprise deployment where multiple TSA teams can operate independently while sharing org-level resources like customers.
 
 ### Goals
 
@@ -32,7 +32,7 @@ Headwaters extends The Jar from a single-team tool to a multi-organization, mult
 
 ### Current State
 
-The Jar currently operates as a single-team tool where:
+Headwaters currently operates as a single-team tool where:
 - All users see all data
 - No organizational hierarchy
 - Commitments can link to engagements (incorrect model)

@@ -1,5 +1,5 @@
 -- ============================================
--- THE JAR - Row Level Security Policies
+-- HEADWATERS - Row Level Security Policies
 -- Security is paramount!
 -- ============================================
 
