@@ -8,13 +8,16 @@ import type { Customer, CustomerStatus } from '@/types/supabase'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Get all customers in an org
+ * Get all customers in an org (must be member of that org)
  */
 export async function getCustomers(orgId: string): Promise<Customer[]> {
-  const supabase = await createClient()
+  // Verify caller belongs to this org
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam || activeTeam.org.id !== orgId) {
+    throw new Error('Access denied: not a member of this org')
+  }
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
     .from('customers')
@@ -176,9 +179,15 @@ export async function deleteCustomer(customerId: string): Promise<void> {
 }
 
 /**
- * Search customers by name
+ * Search customers by name (must be member of that org)
  */
 export async function searchCustomers(orgId: string, query: string): Promise<Customer[]> {
+  // Verify caller belongs to this org
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam || activeTeam.org.id !== orgId) {
+    return []
+  }
+
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)

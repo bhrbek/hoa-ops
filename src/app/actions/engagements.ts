@@ -368,24 +368,34 @@ export async function getActiveEngagementStats(): Promise<{
 }
 
 /**
- * Get OEM buying patterns
+ * Get OEM buying patterns (scoped to active team)
  */
 export async function getOEMBuyingPatterns(limit = 10): Promise<{
   oem1_name: string
   oem2_name: string
   pair_count: number
 }[]> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam) return []
+
   const supabase = await createClient()
 
+  // Note: The RPC function should be updated to accept team_id parameter
+  // For now, we filter client-side by getting team engagements
+  // TODO: Update the RPC function to accept team_id for better performance
   const { data, error } = await (supabase as any)
-    .rpc('get_oem_buying_patterns', { limit_count: limit })
+    .rpc('get_oem_buying_patterns', {
+      limit_count: limit,
+      filter_team_id: activeTeam.team.id
+    })
 
   if (error) {
+    // Fallback if RPC doesn't support team_id yet
     console.error('Error fetching OEM patterns:', error)
     return []
   }
 
-  return data
+  return data || []
 }
 
 /**

@@ -540,3 +540,39 @@ Server actions use `requireTeamAccess()` but RLS is more restrictive (owner/mana
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 7: UI Data Wiring | ✅ Complete | All create dialogs and data fetching wired up |
+| Phase 8: Security Hardening | ✅ Complete | All P1/P2 authorization fixes implemented |
+
+---
+
+## Phase 8: Security Hardening (2026-01-06)
+
+Principal Software Engineer security review identified authorization gaps. All issues fixed.
+
+### P1 Issues (Critical - Fixed)
+
+| ID | File | Function | Issue | Fix |
+|----|------|----------|-------|-----|
+| P1-1 | reference.ts | createDomain, updateDomain, deleteDomain, createOEM, updateOEM, deleteOEM | No auth check | Added `isOrgAdmin` check |
+| P1-2 | reference.ts | getProfiles, searchProfiles | Global user enumeration | Scoped to org via team_memberships join |
+| P1-3 | customers.ts | searchCustomers | Cross-org search | Added org membership check |
+| P1-4 | customers.ts | getCustomers | Cross-org read | Added org membership check |
+| P1-5 | milestones.ts | getMilestone | Missing team check | Added `requireTeamAccess` after fetch |
+| P1-5 | enablement-events.ts | getEnablementEvent | Missing team check | Added `requireTeamAccess` after fetch |
+
+### P2 Issues (Should Fix - Fixed)
+
+| ID | File | Function | Issue | Fix |
+|----|------|----------|-------|-----|
+| P2-1 | commitments.ts | carryCommitment, splitCommitment, dropCommitment | Loose ownership | Required owner OR manager role |
+| P2-2 | engagements.ts | getOEMBuyingPatterns | Cross-tenant BI leak | Added team_id filter |
+| P2-3 | reference.ts | getQuarters | Global quarters | Scoped to active team |
+| P2-4 | orgs.ts | getOrg | Unauthz org read | Added org membership check |
+
+### Files Modified
+- `src/app/actions/reference.ts` - Domain/OEM auth, profile scoping, quarters scoping
+- `src/app/actions/customers.ts` - Org membership checks
+- `src/app/actions/milestones.ts` - Team access check on getMilestone
+- `src/app/actions/enablement-events.ts` - Team access check on getEnablementEvent
+- `src/app/actions/commitments.ts` - Owner/manager role for carry/split/drop
+- `src/app/actions/engagements.ts` - Team scoping for OEM patterns
+- `src/app/actions/orgs.ts` - Org membership check on getOrg

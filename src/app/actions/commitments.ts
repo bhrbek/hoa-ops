@@ -281,8 +281,9 @@ export async function carryCommitment(
   const original = await getCommitment(commitmentId)
   if (!original) throw new Error('Commitment not found')
 
+  // Check access - must be owner or manager to carry someone else's commitment
   if (original.owner_id !== user.id) {
-    await requireTeamAccess(original.team_id)
+    await requireTeamRole(original.team_id, 'manager')
   }
 
   // Mark original as slipped
@@ -340,8 +341,9 @@ export async function splitCommitment(
   const original = await getCommitment(commitmentId)
   if (!original) throw new Error('Commitment not found')
 
+  // Check access - must be owner or manager to split someone else's commitment
   if (original.owner_id !== user.id) {
-    await requireTeamAccess(original.team_id)
+    await requireTeamRole(original.team_id, 'manager')
   }
 
   // Mark original as slipped
@@ -399,8 +401,9 @@ export async function dropCommitment(commitmentId: string): Promise<CommitmentCa
 
   if (!commitment) throw new Error('Commitment not found')
 
+  // Check access - must be owner or manager to drop someone else's commitment
   if (commitment.owner_id !== user.id) {
-    await requireTeamAccess(commitment.team_id)
+    await requireTeamRole(commitment.team_id, 'manager')
   }
 
   const { error } = await (supabase as any)

@@ -8,10 +8,19 @@ import type { Org, OrgAdmin, Profile } from '@/types/supabase'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Get an org by ID
+ * Get an org by ID (must be member of that org)
  */
 export async function getOrg(orgId: string): Promise<Org | null> {
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  // Verify user belongs to this org (either via team or as admin)
+  const userOrgs = await getUserOrgs()
+  if (!userOrgs.some(org => org.id === orgId)) {
+    return null
+  }
 
   const { data, error } = await (supabase as any)
     .from('orgs')

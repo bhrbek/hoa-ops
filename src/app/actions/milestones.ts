@@ -52,8 +52,15 @@ export async function getMilestone(milestoneId: string): Promise<Milestone | nul
     .is('deleted_at', null)
     .single()
 
-  if (error) {
+  if (error || !data) {
     console.error('Error fetching milestone:', error)
+    return null
+  }
+
+  // Verify team access before returning data
+  try {
+    await requireTeamAccess(data.team_id)
+  } catch {
     return null
   }
 

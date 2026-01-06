@@ -80,8 +80,15 @@ export async function getEnablementEvent(eventId: string): Promise<EnablementEve
     .is('deleted_at', null)
     .single()
 
-  if (error) {
+  if (error || !data) {
     console.error('Error fetching enablement event:', error)
+    return null
+  }
+
+  // Verify team access before returning data
+  try {
+    await requireTeamAccess(data.team_id)
+  } catch {
     return null
   }
 

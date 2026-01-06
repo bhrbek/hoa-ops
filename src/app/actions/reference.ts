@@ -46,14 +46,25 @@ export async function getOEMs(): Promise<OEM[]> {
 }
 
 /**
- * Get all profiles (for admin purposes)
+ * Get profiles in the current user's org (for admin purposes)
+ * Scoped to org to prevent cross-tenant enumeration
  */
 export async function getProfiles(): Promise<Profile[]> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam) return []
+
   const supabase = await createClient()
 
+  // Get profiles that are members of teams in the same org
   const { data, error } = await (supabase as any)
     .from('profiles')
-    .select('*')
+    .select(`
+      *,
+      team_memberships!inner(
+        team:teams!inner(org_id)
+      )
+    `)
+    .eq('team_memberships.team.org_id', activeTeam.org.id)
     .order('full_name')
 
   if (error) {
@@ -61,7 +72,13 @@ export async function getProfiles(): Promise<Profile[]> {
     throw new Error('Failed to fetch profiles')
   }
 
-  return data
+  // Dedupe profiles (user may be in multiple teams)
+  const seen = new Set<string>()
+  return (data || []).filter((p: Profile) => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
 }
 
 /**
@@ -165,14 +182,24 @@ export async function getActiveOrgCustomers(): Promise<Customer[]> {
 }
 
 /**
- * Search profiles by name
+ * Search profiles by name (scoped to current user's org)
  */
 export async function searchProfiles(query: string): Promise<Profile[]> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam) return []
+
   const supabase = await createClient()
 
+  // Search profiles within the same org only
   const { data, error } = await (supabase as any)
     .from('profiles')
-    .select('*')
+    .select(`
+      *,
+      team_memberships!inner(
+        team:teams!inner(org_id)
+      )
+    `)
+    .eq('team_memberships.team.org_id', activeTeam.org.id)
     .ilike('full_name', `%${query}%`)
     .order('full_name')
     .limit(20)
@@ -182,18 +209,28 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
     return []
   }
 
-  return data
+  // Dedupe profiles
+  const seen = new Set<string>()
+  return (data || []).filter((p: Profile) => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
 }
 
 /**
- * Get quarters available in the system
+ * Get quarters available for the active team
  */
 export async function getQuarters(): Promise<string[]> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam) return ['Q1 2026']
+
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
     .from('rocks')
     .select('quarter')
+    .eq('team_id', activeTeam.team.id)
     .is('deleted_at', null)
 
   if (error) {
@@ -203,7 +240,7 @@ export async function getQuarters(): Promise<string[]> {
 
   const quarters = data.map((r: { quarter: string }) => r.quarter) as string[]
   const uniqueQuarters = [...new Set(quarters)]
-  return uniqueQuarters.sort().reverse()
+  return uniqueQuarters.length > 0 ? uniqueQuarters.sort().reverse() : ['Q1 2026']
 }
 
 // ============================================
@@ -217,6 +254,11 @@ export async function createDomain(data: {
   name: string
   color?: string
 }): Promise<Domain> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
   const supabase = await createClient()
 
   const { data: domain, error } = await (supabase as any)
@@ -237,12 +279,17 @@ export async function createDomain(data: {
 }
 
 /**
- * Update a domain
+ * Update a domain (org admin only)
  */
 export async function updateDomain(
   domainId: string,
   data: { name?: string; color?: string }
 ): Promise<Domain> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
   const supabase = await createClient()
 
   const { data: domain, error } = await (supabase as any)
@@ -261,9 +308,14 @@ export async function updateDomain(
 }
 
 /**
- * Delete a domain
+ * Delete a domain (org admin only)
  */
 export async function deleteDomain(domainId: string): Promise<void> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
   const supabase = await createClient()
 
   const { error } = await (supabase as any)
@@ -288,6 +340,11 @@ export async function createOEM(data: {
   name: string
   logo_url?: string
 }): Promise<OEM> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
   const supabase = await createClient()
 
   const { data: oem, error } = await (supabase as any)
@@ -308,12 +365,17 @@ export async function createOEM(data: {
 }
 
 /**
- * Update an OEM
+ * Update an OEM (org admin only)
  */
 export async function updateOEM(
   oemId: string,
   data: { name?: string; logo_url?: string }
 ): Promise<OEM> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
   const supabase = await createClient()
 
   const { data: oem, error } = await (supabase as any)
@@ -332,9 +394,14 @@ export async function updateOEM(
 }
 
 /**
- * Delete an OEM
+ * Delete an OEM (org admin only)
  */
 export async function deleteOEM(oemId: string): Promise<void> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
   const supabase = await createClient()
 
   const { error } = await (supabase as any)
