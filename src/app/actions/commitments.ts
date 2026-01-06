@@ -34,7 +34,7 @@ export async function getCommitments(
       *,
       project:projects(id, title, rock_id),
       build_signal:build_signals(id, title, status),
-      owner:profiles(id, full_name, avatar_url)
+      owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('team_id', teamId)
     .is('deleted_at', null)
@@ -80,7 +80,7 @@ export async function getMyCommitments(weekOf?: string): Promise<CommitmentWithR
       *,
       project:projects(id, title, rock_id),
       build_signal:build_signals(id, title, status),
-      owner:profiles(id, full_name, avatar_url)
+      owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('owner_id', user.id)
     .is('deleted_at', null)
@@ -113,7 +113,7 @@ export async function getCommitment(commitmentId: string): Promise<CommitmentWit
       *,
       project:projects(id, title, rock_id),
       build_signal:build_signals(id, title, status),
-      owner:profiles(id, full_name, avatar_url)
+      owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('id', commitmentId)
     .is('deleted_at', null)
@@ -445,7 +445,7 @@ export async function getPendingCarryovers(teamId: string): Promise<CommitmentWi
       *,
       project:projects(id, title, rock_id),
       build_signal:build_signals(id, title, status),
-      owner:profiles(id, full_name, avatar_url)
+      owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('team_id', teamId)
     .lt('week_of', thisWeek)

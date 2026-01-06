@@ -199,7 +199,7 @@ export async function GET() {
           .from('rocks')
           .select(`
             *,
-            owner:profiles(*),
+            owner:profiles!rocks_owner_id_fkey(*),
             projects(*)
           `)
           .eq('team_id', activeTeamId)
@@ -220,7 +220,7 @@ export async function GET() {
           .from('team_memberships')
           .select(`
             *,
-            user:profiles(*)
+            user:profiles!team_memberships_user_id_fkey(*)
           `)
           .eq('team_id', activeTeamId)
           .is('deleted_at', null)

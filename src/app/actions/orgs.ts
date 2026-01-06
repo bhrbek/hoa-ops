@@ -119,7 +119,7 @@ export async function getOrgAdmins(orgId: string): Promise<(OrgAdmin & { user: P
     .from('org_admins')
     .select(`
       *,
-      user:profiles(*)
+      user:profiles!org_admins_user_id_fkey(*)
     `)
     .eq('org_id', orgId)
     .order('created_at')

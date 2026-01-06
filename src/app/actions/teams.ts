@@ -183,7 +183,7 @@ export async function getTeamMembers(teamId: string): Promise<(TeamMembership & 
     .from('team_memberships')
     .select(`
       *,
-      user:profiles(*)
+      user:profiles!team_memberships_user_id_fkey(*)
     `)
     .eq('team_id', teamId)
     .is('deleted_at', null)
@@ -227,7 +227,7 @@ export async function getTeamWithMembers(teamId: string): Promise<TeamWithMember
     .select(`
       id,
       role,
-      user:profiles(*)
+      user:profiles!team_memberships_user_id_fkey(*)
     `)
     .eq('team_id', teamId)
     .is('deleted_at', null)

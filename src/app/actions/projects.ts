@@ -18,7 +18,7 @@ export async function getProjects(teamId: string, rockId?: string): Promise<Proj
     .from('projects')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!projects_owner_id_fkey(*),
       tasks(*)
     `)
     .eq('team_id', teamId)
@@ -60,7 +60,7 @@ export async function getProject(projectId: string): Promise<ProjectWithTasks | 
     .from('projects')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!projects_owner_id_fkey(*),
       tasks(*)
     `)
     .eq('id', projectId)
@@ -93,7 +93,7 @@ export async function getProjectWithMilestones(projectId: string): Promise<Proje
     .from('projects')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!projects_owner_id_fkey(*),
       milestones(*)
     `)
     .eq('id', projectId)
@@ -126,7 +126,7 @@ export async function getProjectWithAll(projectId: string): Promise<ProjectWithA
     .from('projects')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!projects_owner_id_fkey(*),
       tasks(*),
       milestones(*)
     `)
@@ -312,7 +312,7 @@ export async function getProjectsByStatus(teamId: string, status: string): Promi
     .from('projects')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!projects_owner_id_fkey(*),
       tasks(*)
     `)
     .eq('team_id', teamId)

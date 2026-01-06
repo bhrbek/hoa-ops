@@ -27,7 +27,7 @@ export async function getRocks(teamId: string, quarter?: string): Promise<RockWi
     .from('rocks')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!rocks_owner_id_fkey(*),
       projects(*)
     `)
     .eq('team_id', teamId)
@@ -75,7 +75,7 @@ export async function getRock(rockId: string): Promise<RockWithProjects | null> 
     .from('rocks')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!rocks_owner_id_fkey(*),
       projects(*)
     `)
     .eq('id', rockId)
@@ -107,7 +107,7 @@ export async function getRockWithBuildSignals(rockId: string): Promise<RockWithB
     .from('rocks')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!rocks_owner_id_fkey(*),
       build_signals(*)
     `)
     .eq('id', rockId)
@@ -139,7 +139,7 @@ export async function getRockWithAll(rockId: string): Promise<RockWithAll | null
     .from('rocks')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!rocks_owner_id_fkey(*),
       projects(*),
       build_signals(*),
       evidence:engagements(*)
@@ -322,7 +322,7 @@ export async function getRocksByStatus(teamId: string, status: string): Promise<
     .from('rocks')
     .select(`
       *,
-      owner:profiles(*),
+      owner:profiles!rocks_owner_id_fkey(*),
       projects(*)
     `)
     .eq('team_id', teamId)
