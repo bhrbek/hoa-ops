@@ -48,7 +48,7 @@ export async function getTeam(teamId: string): Promise<TeamWithOrg | null> {
     `)
     .eq('id', teamId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error fetching team:', error)

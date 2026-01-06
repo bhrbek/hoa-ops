@@ -113,10 +113,10 @@ export async function getEngagement(engagementId: string): Promise<EngagementWit
     `)
     .eq('id', engagementId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching engagement:', error)
+    if (error) console.error('Error fetching engagement:', error)
     return null
   }
 

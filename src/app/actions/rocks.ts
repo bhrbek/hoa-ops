@@ -80,10 +80,10 @@ export async function getRock(rockId: string): Promise<RockWithProjects | null> 
     `)
     .eq('id', rockId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching rock:', error)
+    if (error) console.error('Error fetching rock:', error)
     return null
   }
 
@@ -112,10 +112,10 @@ export async function getRockWithBuildSignals(rockId: string): Promise<RockWithB
     `)
     .eq('id', rockId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching rock:', error)
+    if (error) console.error('Error fetching rock:', error)
     return null
   }
 
@@ -146,10 +146,10 @@ export async function getRockWithAll(rockId: string): Promise<RockWithAll | null
     `)
     .eq('id', rockId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching rock:', error)
+    if (error) console.error('Error fetching rock:', error)
     return null
   }
 

@@ -318,13 +318,13 @@ export async function canEditEngagement(engagementId: string): Promise<boolean> 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
 
-  // Get engagement's team
+  // Get engagement's team - use maybeSingle() as engagement might not exist
   const { data: engagement } = await (supabase as any)
     .from('engagements')
     .select('team_id')
     .eq('id', engagementId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (!engagement) return false
 
