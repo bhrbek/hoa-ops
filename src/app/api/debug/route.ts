@@ -179,6 +179,60 @@ export async function GET() {
           error: engagementsError?.message || null,
         }
       }
+
+      // Test 10: All profiles (RLS test - can user read other profiles?)
+      const { data: allProfiles, error: allProfilesError } = await (supabase as any)
+        .from('profiles')
+        .select('id, email, full_name')
+        .limit(5)
+
+      results.allProfiles = {
+        count: allProfiles?.length || 0,
+        data: allProfiles,
+        error: allProfilesError?.message || null,
+        errorDetails: allProfilesError,
+      }
+
+      // Test 11: Rocks with owner join (same as getRocks)
+      if (activeTeamId) {
+        const { data: rocksWithOwner, error: rocksWithOwnerError } = await (supabase as any)
+          .from('rocks')
+          .select(`
+            *,
+            owner:profiles(*),
+            projects(*)
+          `)
+          .eq('team_id', activeTeamId)
+          .is('deleted_at', null)
+
+        results.rocksWithOwner = {
+          count: rocksWithOwner?.length || 0,
+          data: rocksWithOwner,
+          error: rocksWithOwnerError?.message || null,
+          errorCode: rocksWithOwnerError?.code || null,
+          errorDetails: rocksWithOwnerError,
+        }
+      }
+
+      // Test 12: Team memberships with user join (same as getTeamMembers)
+      if (activeTeamId) {
+        const { data: membersWithUser, error: membersWithUserError } = await (supabase as any)
+          .from('team_memberships')
+          .select(`
+            *,
+            user:profiles(*)
+          `)
+          .eq('team_id', activeTeamId)
+          .is('deleted_at', null)
+
+        results.membersWithUser = {
+          count: membersWithUser?.length || 0,
+          data: membersWithUser,
+          error: membersWithUserError?.message || null,
+          errorCode: membersWithUserError?.code || null,
+          errorDetails: membersWithUserError,
+        }
+      }
     }
   } catch (e) {
     results.supabaseError = String(e)
