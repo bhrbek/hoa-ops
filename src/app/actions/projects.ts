@@ -55,6 +55,7 @@ export async function getActiveProjects(rockId?: string): Promise<ProjectWithTas
 export async function getProject(projectId: string): Promise<ProjectWithTasks | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as project might not exist
   const { data, error } = await (supabase as any)
     .from('projects')
     .select(`
@@ -64,10 +65,10 @@ export async function getProject(projectId: string): Promise<ProjectWithTasks | 
     `)
     .eq('id', projectId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching project:', error)
+    if (error) console.error('Error fetching project:', error)
     return null
   }
 
@@ -87,6 +88,7 @@ export async function getProject(projectId: string): Promise<ProjectWithTasks | 
 export async function getProjectWithMilestones(projectId: string): Promise<ProjectWithMilestones | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as project might not exist
   const { data, error } = await (supabase as any)
     .from('projects')
     .select(`
@@ -96,10 +98,10 @@ export async function getProjectWithMilestones(projectId: string): Promise<Proje
     `)
     .eq('id', projectId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching project:', error)
+    if (error) console.error('Error fetching project:', error)
     return null
   }
 
@@ -119,6 +121,7 @@ export async function getProjectWithMilestones(projectId: string): Promise<Proje
 export async function getProjectWithAll(projectId: string): Promise<ProjectWithAll | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as project might not exist
   const { data, error } = await (supabase as any)
     .from('projects')
     .select(`
@@ -129,10 +132,10 @@ export async function getProjectWithAll(projectId: string): Promise<ProjectWithA
     `)
     .eq('id', projectId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching project:', error)
+    if (error) console.error('Error fetching project:', error)
     return null
   }
 

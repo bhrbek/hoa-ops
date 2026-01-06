@@ -106,6 +106,7 @@ export async function getMyCommitments(weekOf?: string): Promise<CommitmentWithR
 export async function getCommitment(commitmentId: string): Promise<CommitmentWithRelations | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as commitment might not exist
   const { data, error } = await (supabase as any)
     .from('commitments')
     .select(`
@@ -116,10 +117,10 @@ export async function getCommitment(commitmentId: string): Promise<CommitmentWit
     `)
     .eq('id', commitmentId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching commitment:', error)
+    if (error) console.error('Error fetching commitment:', error)
     return null
   }
 

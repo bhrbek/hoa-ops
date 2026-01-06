@@ -50,15 +50,16 @@ export async function getTeamCustomers(): Promise<Customer[]> {
 export async function getCustomer(customerId: string): Promise<Customer | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as customer might not exist
   const { data, error } = await (supabase as any)
     .from('customers')
     .select('*')
     .eq('id', customerId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching customer:', error)
+    if (error) console.error('Error fetching customer:', error)
     return null
   }
 

@@ -73,15 +73,16 @@ export async function getUpcomingEnablementEvents(teamId: string, days = 30): Pr
 export async function getEnablementEvent(eventId: string): Promise<EnablementEvent | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as event might not exist
   const { data, error } = await (supabase as any)
     .from('enablement_events')
     .select('*')
     .eq('id', eventId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching enablement event:', error)
+    if (error) console.error('Error fetching enablement event:', error)
     return null
   }
 
@@ -144,12 +145,12 @@ export async function updateEnablementEvent(
 ): Promise<EnablementEvent> {
   const supabase = await createClient()
 
-  // Get event's team to check access
+  // Get event's team to check access - use maybeSingle()
   const { data: event } = await (supabase as any)
     .from('enablement_events')
     .select('team_id')
     .eq('id', eventId)
-    .single()
+    .maybeSingle()
 
   if (!event) throw new Error('Enablement event not found')
 
@@ -187,12 +188,12 @@ export async function updateEnablementEventAttendees(
 export async function deleteEnablementEvent(eventId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get event's team to check access
+  // Get event's team to check access - use maybeSingle()
   const { data: event } = await (supabase as any)
     .from('enablement_events')
     .select('team_id')
     .eq('id', eventId)
-    .single()
+    .maybeSingle()
 
   if (!event) throw new Error('Enablement event not found')
 

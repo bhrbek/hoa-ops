@@ -45,15 +45,16 @@ export async function getTeamAssets(): Promise<Asset[]> {
 export async function getAsset(assetId: string): Promise<Asset | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as asset might not exist
   const { data, error } = await (supabase as any)
     .from('assets')
     .select('*')
     .eq('id', assetId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching asset:', error)
+    if (error) console.error('Error fetching asset:', error)
     return null
   }
 
@@ -110,12 +111,12 @@ export async function updateAsset(
 ): Promise<Asset> {
   const supabase = await createClient()
 
-  // Get asset's team to check permissions
+  // Get asset's team to check permissions - use maybeSingle()
   const { data: asset } = await (supabase as any)
     .from('assets')
     .select('team_id')
     .eq('id', assetId)
-    .single()
+    .maybeSingle()
 
   if (!asset) throw new Error('Asset not found')
 
@@ -143,12 +144,12 @@ export async function updateAsset(
 export async function deleteAsset(assetId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get asset's team to check permissions
+  // Get asset's team to check permissions - use maybeSingle()
   const { data: asset } = await (supabase as any)
     .from('assets')
     .select('team_id')
     .eq('id', assetId)
-    .single()
+    .maybeSingle()
 
   if (!asset) throw new Error('Asset not found')
 
@@ -176,24 +177,24 @@ export async function deleteAsset(assetId: string): Promise<void> {
 export async function linkAssetToProject(assetId: string, projectId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get asset's team to check permissions
+  // Get asset's team to check permissions - use maybeSingle()
   const { data: asset } = await (supabase as any)
     .from('assets')
     .select('team_id')
     .eq('id', assetId)
-    .single()
+    .maybeSingle()
 
   if (!asset) throw new Error('Asset not found')
 
   await requireTeamAccess(asset.team_id)
 
-  // Check if link already exists
+  // Check if link already exists - use maybeSingle()
   const { data: existing } = await (supabase as any)
     .from('project_assets')
     .select('id')
     .eq('asset_id', assetId)
     .eq('project_id', projectId)
-    .single()
+    .maybeSingle()
 
   if (existing) return // Already linked
 
@@ -218,12 +219,12 @@ export async function linkAssetToProject(assetId: string, projectId: string): Pr
 export async function unlinkAssetFromProject(assetId: string, projectId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get asset's team to check permissions
+  // Get asset's team to check permissions - use maybeSingle()
   const { data: asset } = await (supabase as any)
     .from('assets')
     .select('team_id')
     .eq('id', assetId)
-    .single()
+    .maybeSingle()
 
   if (!asset) throw new Error('Asset not found')
 
@@ -249,24 +250,24 @@ export async function unlinkAssetFromProject(assetId: string, projectId: string)
 export async function linkAssetToEngagement(assetId: string, engagementId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get asset's team to check permissions
+  // Get asset's team to check permissions - use maybeSingle()
   const { data: asset } = await (supabase as any)
     .from('assets')
     .select('team_id')
     .eq('id', assetId)
-    .single()
+    .maybeSingle()
 
   if (!asset) throw new Error('Asset not found')
 
   await requireTeamAccess(asset.team_id)
 
-  // Check if link already exists
+  // Check if link already exists - use maybeSingle()
   const { data: existing } = await (supabase as any)
     .from('engagement_assets')
     .select('id')
     .eq('asset_id', assetId)
     .eq('engagement_id', engagementId)
-    .single()
+    .maybeSingle()
 
   if (existing) return // Already linked
 
@@ -291,12 +292,12 @@ export async function linkAssetToEngagement(assetId: string, engagementId: strin
 export async function unlinkAssetFromEngagement(assetId: string, engagementId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get asset's team to check permissions
+  // Get asset's team to check permissions - use maybeSingle()
   const { data: asset } = await (supabase as any)
     .from('assets')
     .select('team_id')
     .eq('id', assetId)
-    .single()
+    .maybeSingle()
 
   if (!asset) throw new Error('Asset not found')
 
@@ -322,12 +323,12 @@ export async function unlinkAssetFromEngagement(assetId: string, engagementId: s
 export async function getProjectAssets(projectId: string): Promise<Asset[]> {
   const supabase = await createClient()
 
-  // Get project to verify team access
+  // Get project to verify team access - use maybeSingle()
   const { data: project } = await (supabase as any)
     .from('projects')
     .select('team_id')
     .eq('id', projectId)
-    .single()
+    .maybeSingle()
 
   if (!project) return []
 
@@ -358,12 +359,12 @@ export async function getProjectAssets(projectId: string): Promise<Asset[]> {
 export async function getEngagementAssets(engagementId: string): Promise<Asset[]> {
   const supabase = await createClient()
 
-  // Get engagement to verify team access
+  // Get engagement to verify team access - use maybeSingle()
   const { data: engagement } = await (supabase as any)
     .from('engagements')
     .select('team_id')
     .eq('id', engagementId)
-    .single()
+    .maybeSingle()
 
   if (!engagement) return []
 

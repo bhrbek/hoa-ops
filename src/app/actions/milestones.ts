@@ -13,12 +13,12 @@ import type { Milestone, MilestoneStatus } from '@/types/supabase'
 export async function getMilestones(projectId: string): Promise<Milestone[]> {
   const supabase = await createClient()
 
-  // Get project's team to check access
+  // Get project's team to check access - use maybeSingle() as project might not exist
   const { data: project } = await (supabase as any)
     .from('projects')
     .select('team_id')
     .eq('id', projectId)
-    .single()
+    .maybeSingle()
 
   if (!project) throw new Error('Project not found')
 
@@ -45,15 +45,16 @@ export async function getMilestones(projectId: string): Promise<Milestone[]> {
 export async function getMilestone(milestoneId: string): Promise<Milestone | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as milestone might not exist
   const { data, error } = await (supabase as any)
     .from('milestones')
     .select('*')
     .eq('id', milestoneId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching milestone:', error)
+    if (error) console.error('Error fetching milestone:', error)
     return null
   }
 
@@ -78,12 +79,12 @@ export async function createMilestone(data: {
 }): Promise<Milestone> {
   const supabase = await createClient()
 
-  // Get project's team to check access and get team_id
+  // Get project's team to check access and get team_id - use maybeSingle()
   const { data: project } = await (supabase as any)
     .from('projects')
     .select('team_id')
     .eq('id', data.project_id)
-    .single()
+    .maybeSingle()
 
   if (!project) throw new Error('Project not found')
 
@@ -119,12 +120,12 @@ export async function updateMilestone(
 ): Promise<Milestone> {
   const supabase = await createClient()
 
-  // Get milestone's team to check access
+  // Get milestone's team to check access - use maybeSingle()
   const { data: milestone } = await (supabase as any)
     .from('milestones')
     .select('team_id')
     .eq('id', milestoneId)
-    .single()
+    .maybeSingle()
 
   if (!milestone) throw new Error('Milestone not found')
 
@@ -169,12 +170,12 @@ export async function completeMilestone(milestoneId: string): Promise<Milestone>
 export async function deleteMilestone(milestoneId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get milestone's team to check access
+  // Get milestone's team to check access - use maybeSingle()
   const { data: milestone } = await (supabase as any)
     .from('milestones')
     .select('team_id')
     .eq('id', milestoneId)
-    .single()
+    .maybeSingle()
 
   if (!milestone) throw new Error('Milestone not found')
 

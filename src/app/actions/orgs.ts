@@ -22,15 +22,16 @@ export async function getOrg(orgId: string): Promise<Org | null> {
     return null
   }
 
+  // Use maybeSingle() as org might not exist
   const { data, error } = await (supabase as any)
     .from('orgs')
     .select('*')
     .eq('id', orgId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
-  if (error) {
-    console.error('Error fetching org:', error)
+  if (error || !data) {
+    if (error) console.error('Error fetching org:', error)
     return null
   }
 

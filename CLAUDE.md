@@ -478,3 +478,124 @@ When RLS queries return empty unexpectedly:
 4. **Check nested selects** (non-existent columns fail silently)
 5. **Check for .single() vs .maybeSingle()** (single() throws on 0 rows)
 6. **Create debug endpoint** to isolate server action vs RLS issues
+
+---
+
+## TESTING
+
+### Test Stack
+- **Vitest** - Test runner (React 19 + Next.js compatible)
+- **@testing-library/react** - Component testing
+- **@testing-library/user-event** - User interaction simulation
+- **jsdom** - DOM environment
+
+### Running Tests
+
+```bash
+npm run test          # Watch mode (development)
+npm run test:run      # Single run (CI)
+npm run test:coverage # With coverage report
+```
+
+### When to Run Tests
+
+**ALWAYS run tests before:**
+- Committing changes to modal/dialog components
+- Modifying form validation logic
+- Changing server action integrations
+- Refactoring UI components with user interactions
+
+**Test commands for specific files:**
+```bash
+npm run test -- engagement-drawer    # Run engagement drawer tests
+npm run test -- create-rock-dialog   # Run rock dialog tests
+npm run test:run                     # Run all tests once
+```
+
+### Test File Locations
+
+| Component | Test File |
+|-----------|-----------|
+| EngagementDrawer | `src/components/stream/__tests__/engagement-drawer.test.tsx` |
+| CreateRockDialog | `src/components/climb/__tests__/create-rock-dialog.test.tsx` |
+| CreateProjectDialog | `src/components/climb/__tests__/create-project-dialog.test.tsx` |
+| CreateCommitmentDialog | `src/components/commitment/__tests__/create-commitment-dialog.test.tsx` |
+
+### Key Test Infrastructure
+
+| File | Purpose |
+|------|---------|
+| `vitest.config.ts` | Test runner configuration |
+| `src/test/setup.ts` | Global mocks (Next.js, Sonner, ResizeObserver, etc.) |
+| `src/test/test-utils.tsx` | Custom render with providers, mock factories |
+| `docs/TESTABILITY-ISSUES.md` | Known limitations and workarounds |
+
+### Known Limitation: Radix UI Select in jsdom
+
+Radix UI Select components don't expose proper `role="option"` in jsdom. Dropdown option selection cannot be tested reliably.
+
+**Workaround:** Test that select triggers exist and have default values. Skip testing dropdown option selection.
+
+```typescript
+// DON'T DO THIS (won't work):
+await user.click(screen.getByRole('combobox', { name: /owner/i }))
+await user.click(screen.getByText('Test User'))
+
+// DO THIS INSTEAD:
+// Verify the selector trigger exists
+const ownerTrigger = document.getElementById('rock-owner')
+expect(ownerTrigger).toBeInTheDocument()
+```
+
+**For full dropdown interaction testing, use E2E tests (Playwright/Cypress).**
+
+### Writing Modal Component Tests
+
+Modal components should test:
+1. **Open/Close behavior** - Cancel, X button, Escape key
+2. **Form fields presence** - All inputs/selects are rendered
+3. **Form validation** - Required fields, disabled submit button
+4. **Accessibility** - Dialog role, labels, focus trap
+5. **Clean unmount** - No errors on unmount
+
+**Template:**
+```typescript
+describe('MyDialog', () => {
+  describe('Modal Open/Close Behavior', () => { /* ... */ })
+  describe('Form Fields', () => { /* ... */ })
+  describe('Form Validation', () => { /* ... */ })
+  describe('Accessibility', () => { /* ... */ })
+  describe('Clean Unmount', () => { /* ... */ })
+})
+```
+
+### Mock Data Factories
+
+Use `src/test/test-utils.tsx` mock factories for consistent test data:
+
+```typescript
+import {
+  createMockEngagement,
+  createMockRock,
+  createMockProject,
+  createMockBuildSignal
+} from '@/test/test-utils'
+
+const mockRock = createMockRock({
+  id: 'rock-1',
+  title: 'Custom Title'
+})
+```
+
+### TeamContext in Tests
+
+Provide custom team context through the render options:
+
+```typescript
+render(<MyComponent />, {
+  teamContext: {
+    teamMembers: [/* custom members */],
+    isOrgAdmin: true,
+    isLoading: false,
+  },
+})

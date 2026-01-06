@@ -13,12 +13,12 @@ import type { BuildSignal, BuildSignalStatus } from '@/types/supabase'
 export async function getBuildSignals(rockId: string): Promise<BuildSignal[]> {
   const supabase = await createClient()
 
-  // Get rock's team to check access
+  // Get rock's team to check access - use maybeSingle()
   const { data: rock } = await (supabase as any)
     .from('rocks')
     .select('team_id')
     .eq('id', rockId)
-    .single()
+    .maybeSingle()
 
   if (!rock) throw new Error('Rock not found')
 
@@ -77,15 +77,16 @@ export async function getActiveBuildSignals(): Promise<BuildSignal[]> {
 export async function getBuildSignal(signalId: string): Promise<BuildSignal | null> {
   const supabase = await createClient()
 
+  // Use maybeSingle() as signal might not exist
   const { data, error } = await (supabase as any)
     .from('build_signals')
     .select('*')
     .eq('id', signalId)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
-    console.error('Error fetching build signal:', error)
+    if (error) console.error('Error fetching build signal:', error)
     return null
   }
 
@@ -112,12 +113,12 @@ export async function createBuildSignal(data: {
 }): Promise<BuildSignal> {
   const supabase = await createClient()
 
-  // Get rock's team to check access and get team_id
+  // Get rock's team to check access and get team_id - use maybeSingle()
   const { data: rock } = await (supabase as any)
     .from('rocks')
     .select('team_id')
     .eq('id', data.rock_id)
-    .single()
+    .maybeSingle()
 
   if (!rock) throw new Error('Rock not found')
 
@@ -158,12 +159,12 @@ export async function updateBuildSignal(
 ): Promise<BuildSignal> {
   const supabase = await createClient()
 
-  // Get signal's team to check access
+  // Get signal's team to check access - use maybeSingle()
   const { data: signal } = await (supabase as any)
     .from('build_signals')
     .select('team_id')
     .eq('id', signalId)
-    .single()
+    .maybeSingle()
 
   if (!signal) throw new Error('Build signal not found')
 
@@ -253,12 +254,12 @@ export async function markBuildSignalMissed(signalId: string): Promise<BuildSign
 export async function deleteBuildSignal(signalId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get signal's team to check access
+  // Get signal's team to check access - use maybeSingle()
   const { data: signal } = await (supabase as any)
     .from('build_signals')
     .select('team_id')
     .eq('id', signalId)
-    .single()
+    .maybeSingle()
 
   if (!signal) throw new Error('Build signal not found')
 
