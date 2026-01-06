@@ -17,6 +17,32 @@ Failure to respect these constraints is a functional bug.
 
 ---
 
+## AI DEVELOPMENT REQUIREMENTS (NON-NEGOTIABLE)
+
+### 95% Confidence Rule
+
+**Before making any code change, you MUST be 95% confident that:**
+1. You understand the root cause of the issue
+2. Your proposed fix addresses the root cause, not symptoms
+3. The fix will not introduce new issues
+4. You have reviewed all relevant documentation
+
+**If confidence is below 95%:**
+1. Stop and investigate further
+2. Read relevant files and documentation
+3. Trace through the code path
+4. Check database schema and RLS policies
+5. Create debug endpoints or add logging if needed
+6. Only proceed when confidence reaches 95%
+
+**Do NOT:**
+- Make speculative changes
+- Fix symptoms instead of root causes
+- Skip reviewing existing documentation
+- Make cascading changes without understanding dependencies
+
+---
+
 ## CORE PHILOSOPHY (NON-NEGOTIABLE)
 
 ### 1. Engagements Are Sand
