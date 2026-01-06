@@ -94,8 +94,17 @@ export function TeamProvider({
       ])
 
       console.log('[TeamContext] Results:', {
-        teamContext: teamContext ? { teamId: teamContext.team?.id, isOrgAdmin: teamContext.isOrgAdmin } : null,
-        userWithRoles: userWithRoles ? { email: userWithRoles.email, teamsCount: userWithRoles.teams?.length } : null
+        teamContext: teamContext ? {
+          teamId: teamContext.team?.id,
+          teamName: teamContext.team?.name,
+          isOrgAdmin: teamContext.isOrgAdmin
+        } : 'NULL - no team context!',
+        userWithRoles: userWithRoles ? {
+          email: userWithRoles.email,
+          teamsCount: userWithRoles.teams?.length,
+          teams: userWithRoles.teams?.map(t => ({ id: t.id, name: t.name })),
+          orgsAdminCount: userWithRoles.orgsAdmin?.length
+        } : 'NULL - no user!'
       })
 
       if (userWithRoles) {
