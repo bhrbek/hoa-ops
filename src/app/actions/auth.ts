@@ -88,15 +88,6 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     .map((a: any) => a.org)
     .filter(Boolean)
 
-  console.log('[getCurrentUserWithRoles]', {
-    userId: user.id,
-    email: user.email,
-    teamsCount: teams?.length || 0,
-    teams: teams?.map((t: any) => ({ id: t.id, name: t.name })),
-    orgsAdminCount: orgsAdmin?.length || 0,
-    rawMemberships: memberships?.length || 0
-  })
-
   return {
     ...profile,
     teams,
@@ -165,14 +156,6 @@ export async function getActiveTeam(): Promise<ActiveTeamContext | null> {
     .eq('org_id', team.org_id)
     .eq('user_id', user.id)
     .single()
-
-  console.log('[getActiveTeam DEBUG]', {
-    userId: user.id,
-    teamId: team.id,
-    orgId: team.org_id,
-    orgAdmin: !!orgAdmin,
-    orgAdminError: orgAdminError?.message
-  })
 
   return {
     team: team as Team,

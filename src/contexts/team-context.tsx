@@ -77,7 +77,6 @@ export function TeamProvider({
   }, [])
 
   async function loadTeamData() {
-    console.log('[TeamContext] loadTeamData starting...')
     setIsLoading(true)
     setError(null)
 
@@ -87,25 +86,10 @@ export function TeamProvider({
         "@/app/actions/auth"
       )
 
-      console.log('[TeamContext] Fetching team and user data...')
       const [teamContext, userWithRoles] = await Promise.all([
         getActiveTeam(),
         getCurrentUserWithRoles(),
       ])
-
-      console.log('[TeamContext] Results:', {
-        teamContext: teamContext ? {
-          teamId: teamContext.team?.id,
-          teamName: teamContext.team?.name,
-          isOrgAdmin: teamContext.isOrgAdmin
-        } : 'NULL - no team context!',
-        userWithRoles: userWithRoles ? {
-          email: userWithRoles.email,
-          teamsCount: userWithRoles.teams?.length,
-          teams: userWithRoles.teams?.map(t => ({ id: t.id, name: t.name })),
-          orgsAdminCount: userWithRoles.orgsAdmin?.length
-        } : 'NULL - no user!'
-      })
 
       if (userWithRoles) {
         setUser({ ...userWithRoles, email: userWithRoles.email || "" })
@@ -117,16 +101,12 @@ export function TeamProvider({
         setActiveOrg(teamContext.org)
         setCurrentRole(teamContext.role)
         setIsOrgAdmin(teamContext.isOrgAdmin)
-        console.log('[TeamContext] Setting isOrgAdmin to:', teamContext.isOrgAdmin)
         await loadTeamMembers(teamContext.team.id)
-      } else {
-        console.log('[TeamContext] No teamContext returned!')
       }
     } catch (err) {
-      console.error("[TeamContext] Failed to load team data:", err)
+      console.error("Failed to load team data:", err)
       setError("Failed to load team data")
     } finally {
-      console.log('[TeamContext] loadTeamData complete')
       setIsLoading(false)
     }
   }
