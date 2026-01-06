@@ -15,10 +15,13 @@ export async function GET() {
     }
   }
 
+  let activeTeamId: string | null = null
+
   try {
     const cookieStore = await cookies()
+    activeTeamId = cookieStore.get('hw_active_team')?.value || null
     results.cookies = {
-      activeTeamCookie: cookieStore.get('hw_active_team')?.value || null,
+      activeTeamCookie: activeTeamId,
       hasAuthCookies: cookieStore.getAll().some(c => c.name.includes('supabase')),
     }
   } catch (e) {
@@ -39,7 +42,7 @@ export async function GET() {
     }
 
     if (authData?.user) {
-      // Test profile query
+      // Test 1: Simple profile query
       const { data: profile, error: profileError } = await (supabase as any)
         .from('profiles')
         .select('id, email, full_name')
@@ -52,7 +55,7 @@ export async function GET() {
         error: profileError?.message || null,
       }
 
-      // Test team memberships query
+      // Test 2: Simple team memberships query
       const { data: memberships, error: membershipError } = await (supabase as any)
         .from('team_memberships')
         .select('id, team_id, role')
@@ -65,7 +68,7 @@ export async function GET() {
         error: membershipError?.message || null,
       }
 
-      // Test teams query
+      // Test 3: Simple teams query
       const { data: teams, error: teamsError } = await (supabase as any)
         .from('teams')
         .select('id, name')
@@ -75,6 +78,101 @@ export async function GET() {
         count: teams?.length || 0,
         data: teams,
         error: teamsError?.message || null,
+      }
+
+      // Test 4: Simple orgs query
+      const { data: orgs, error: orgsError } = await (supabase as any)
+        .from('orgs')
+        .select('id, name')
+
+      results.orgs = {
+        count: orgs?.length || 0,
+        data: orgs,
+        error: orgsError?.message || null,
+      }
+
+      // Test 5: COMPLEX - Teams with org join (used by getActiveTeam)
+      if (activeTeamId) {
+        const { data: teamWithOrg, error: teamWithOrgError } = await (supabase as any)
+          .from('teams')
+          .select('*, org:orgs(*)')
+          .eq('id', activeTeamId)
+          .is('deleted_at', null)
+          .maybeSingle()
+
+        results.teamWithOrgJoin = {
+          found: !!teamWithOrg,
+          data: teamWithOrg,
+          error: teamWithOrgError?.message || null,
+          errorDetails: teamWithOrgError,
+        }
+      }
+
+      // Test 6: COMPLEX - Memberships with nested team/org (used by getCurrentUserWithRoles)
+      const { data: membershipsWithTeam, error: membershipsWithTeamError } = await (supabase as any)
+        .from('team_memberships')
+        .select(`
+          id,
+          role,
+          team:teams(
+            id,
+            name,
+            description,
+            org:orgs(id, name)
+          )
+        `)
+        .eq('user_id', authData.user.id)
+        .is('deleted_at', null)
+
+      results.membershipsWithTeamOrg = {
+        count: membershipsWithTeam?.length || 0,
+        data: membershipsWithTeam,
+        error: membershipsWithTeamError?.message || null,
+        errorDetails: membershipsWithTeamError,
+      }
+
+      // Test 7: org_admins check
+      const { data: orgAdmin, error: orgAdminError } = await (supabase as any)
+        .from('org_admins')
+        .select('id, org_id')
+        .eq('user_id', authData.user.id)
+
+      results.orgAdmins = {
+        count: orgAdmin?.length || 0,
+        data: orgAdmin,
+        error: orgAdminError?.message || null,
+      }
+
+      // Test 8: Rocks query (simple)
+      if (activeTeamId) {
+        const { data: rocks, error: rocksError } = await (supabase as any)
+          .from('rocks')
+          .select('id, title')
+          .eq('team_id', activeTeamId)
+          .is('deleted_at', null)
+          .limit(3)
+
+        results.rocks = {
+          count: rocks?.length || 0,
+          data: rocks,
+          error: rocksError?.message || null,
+        }
+      }
+
+      // Test 9: Engagements query (simple)
+      if (activeTeamId) {
+        const { data: engagements, error: engagementsError } = await (supabase as any)
+          .from('engagements')
+          .select('id, activity_type')
+          .eq('team_id', activeTeamId)
+          .is('deleted_at', null)
+          .limit(3)
+
+        results.engagements = {
+          count: engagements?.length || 0,
+          data: engagements,
+          error: engagementsError?.message || null,
+        }
       }
     }
   } catch (e) {
