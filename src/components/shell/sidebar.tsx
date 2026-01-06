@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Waves, TrendingUp, LayoutDashboard, Settings, ClipboardList, BarChart3, Mountain } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Waves, LayoutDashboard, Settings, ClipboardList, BarChart3, Mountain, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { TeamSelector } from "@/components/shell/team-selector"
 import { useTeam } from "@/contexts/team-context"
+import { signOut } from "@/app/actions/auth"
 
 const navItems = [
   {
@@ -51,7 +52,20 @@ export function Sidebar({
   capacityPercent = 80
 }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user, isLoading, isOrgAdmin } = useTeam()
+  const [isSigningOut, setIsSigningOut] = React.useState(false)
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    try {
+      await signOut()
+      router.push('/login')
+    } catch (error) {
+      console.error('Failed to sign out:', error)
+      setIsSigningOut(false)
+    }
+  }
 
   // Get initials from user's full name
   const userInitials = React.useMemo(() => {
@@ -219,15 +233,25 @@ export function Sidebar({
               <p className="text-sm font-medium text-slate-900 truncate">{user.full_name}</p>
               <p className="text-xs text-slate-500 truncate">{user.email}</p>
             </div>
-            {isOrgAdmin && (
-              <Link
-                href="/settings/admin"
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                title="Admin Settings"
+            <div className="flex items-center gap-1">
+              {isOrgAdmin && (
+                <Link
+                  href="/settings/admin"
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  title="Admin Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </Link>
+              )}
+              <button
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                title="Sign out"
               >
-                <Settings className="h-4 w-4" />
-              </Link>
-            )}
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         ) : (
           <div className="text-sm text-slate-500 text-center">Not signed in</div>

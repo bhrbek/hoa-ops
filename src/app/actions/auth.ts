@@ -319,3 +319,15 @@ export async function getUserTeams(): Promise<(Team & { role: TeamRole; org: Org
 
   return userWithRoles.teams
 }
+
+/**
+ * Sign out the current user
+ */
+export async function signOut(): Promise<void> {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+
+  // Clear active team cookie
+  const cookieStore = await cookies()
+  cookieStore.delete(ACTIVE_TEAM_COOKIE)
+}
