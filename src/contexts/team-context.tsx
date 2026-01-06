@@ -77,19 +77,27 @@ export function TeamProvider({
   }, [])
 
   async function loadTeamData() {
+    console.log("[TeamContext] loadTeamData START")
     setIsLoading(true)
     setError(null)
 
     try {
       // Dynamic imports to avoid issues during SSR
+      console.log("[TeamContext] Importing auth actions...")
       const { getActiveTeam, getCurrentUserWithRoles } = await import(
         "@/app/actions/auth"
       )
+      console.log("[TeamContext] Auth actions imported, calling...")
 
       const [teamContext, userWithRoles] = await Promise.all([
         getActiveTeam(),
         getCurrentUserWithRoles(),
       ])
+
+      console.log("[TeamContext] Results:", {
+        teamContext: teamContext ? { teamId: teamContext.team?.id, isOrgAdmin: teamContext.isOrgAdmin } : null,
+        userWithRoles: userWithRoles ? { email: userWithRoles.email, teamsCount: userWithRoles.teams?.length } : null
+      })
 
       if (userWithRoles) {
         setUser({ ...userWithRoles, email: userWithRoles.email || "" })
@@ -101,12 +109,16 @@ export function TeamProvider({
         setActiveOrg(teamContext.org)
         setCurrentRole(teamContext.role)
         setIsOrgAdmin(teamContext.isOrgAdmin)
+        console.log("[TeamContext] Set isOrgAdmin to:", teamContext.isOrgAdmin)
         await loadTeamMembers(teamContext.team.id)
+      } else {
+        console.log("[TeamContext] No teamContext returned!")
       }
     } catch (err) {
-      console.error("Failed to load team data:", err)
+      console.error("[TeamContext] Failed to load team data:", err)
       setError("Failed to load team data")
     } finally {
+      console.log("[TeamContext] loadTeamData DONE")
       setIsLoading(false)
     }
   }
