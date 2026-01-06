@@ -238,12 +238,13 @@ export async function addTeamMember(
   const supabase = await createClient()
 
   // Check if membership already exists (including soft-deleted)
+  // Use maybeSingle() - single() throws error on 0 rows
   const { data: existing } = await (supabase as any)
     .from('team_memberships')
     .select('id, deleted_at')
     .eq('team_id', teamId)
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     if (existing.deleted_at) {
