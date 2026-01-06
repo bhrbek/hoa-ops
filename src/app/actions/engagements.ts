@@ -83,7 +83,7 @@ export async function getActiveEngagements(options?: {
   rockId?: string
 }): Promise<EngagementWithRelations[]> {
   const activeTeam = await getActiveTeam()
-  if (!activeTeam) throw new Error('No active team')
+  if (!activeTeam?.team?.id) return [] // Return empty instead of throwing
 
   return getEngagements(activeTeam.team.id, options)
 }
@@ -362,7 +362,9 @@ export async function getActiveEngagementStats(): Promise<{
   workshopCount: number
 }> {
   const activeTeam = await getActiveTeam()
-  if (!activeTeam) throw new Error('No active team')
+  if (!activeTeam?.team?.id) {
+    return { totalRevenue: 0, totalGP: 0, engagementCount: 0, workshopCount: 0 }
+  }
 
   return getEngagementStats(activeTeam.team.id)
 }

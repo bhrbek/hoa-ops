@@ -44,7 +44,7 @@ export async function getRocks(teamId: string, quarter?: string): Promise<RockWi
  */
 export async function getActiveRocks(quarter?: string): Promise<RockWithProjects[]> {
   const activeTeam = await getActiveTeam()
-  if (!activeTeam) throw new Error('No active team')
+  if (!activeTeam?.team?.id) return [] // Return empty instead of throwing
 
   return getRocks(activeTeam.team.id, quarter)
 }
