@@ -4,6 +4,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
+import { getActiveTeam, getCurrentUserWithRoles } from '@/app/actions/auth'
+import { getActiveRocks } from '@/app/actions/rocks'
+import { getActiveEngagements, getActiveEngagementStats } from '@/app/actions/engagements'
+import { getTeamMembers } from '@/app/actions/teams'
 
 export async function GET() {
   const results: Record<string, unknown> = {
@@ -178,6 +182,114 @@ export async function GET() {
   } catch (e) {
     results.supabaseError = String(e)
     results.supabaseErrorStack = e instanceof Error ? e.stack : null
+  }
+
+  // ============================================
+  // TEST ACTUAL SERVER ACTIONS
+  // ============================================
+  results.serverActions = {}
+
+  // Test getActiveTeam server action
+  try {
+    const activeTeamResult = await getActiveTeam()
+    results.serverActions.getActiveTeam = {
+      success: true,
+      hasData: !!activeTeamResult,
+      teamId: activeTeamResult?.team?.id || null,
+      teamName: activeTeamResult?.team?.name || null,
+      orgName: activeTeamResult?.org?.name || null,
+      role: activeTeamResult?.role || null,
+      isOrgAdmin: activeTeamResult?.isOrgAdmin || false,
+    }
+  } catch (e) {
+    results.serverActions.getActiveTeam = {
+      success: false,
+      error: String(e),
+      stack: e instanceof Error ? e.stack : null,
+    }
+  }
+
+  // Test getCurrentUserWithRoles server action
+  try {
+    const userWithRoles = await getCurrentUserWithRoles()
+    results.serverActions.getCurrentUserWithRoles = {
+      success: true,
+      hasData: !!userWithRoles,
+      email: userWithRoles?.email || null,
+      teamCount: userWithRoles?.teams?.length || 0,
+      orgsAdminCount: userWithRoles?.orgsAdmin?.length || 0,
+    }
+  } catch (e) {
+    results.serverActions.getCurrentUserWithRoles = {
+      success: false,
+      error: String(e),
+      stack: e instanceof Error ? e.stack : null,
+    }
+  }
+
+  // Test getActiveRocks server action
+  try {
+    const rocks = await getActiveRocks()
+    results.serverActions.getActiveRocks = {
+      success: true,
+      count: rocks?.length || 0,
+      rocks: rocks?.map(r => ({ id: r.id, title: r.title })) || [],
+    }
+  } catch (e) {
+    results.serverActions.getActiveRocks = {
+      success: false,
+      error: String(e),
+      stack: e instanceof Error ? e.stack : null,
+    }
+  }
+
+  // Test getActiveEngagementStats server action
+  try {
+    const stats = await getActiveEngagementStats()
+    results.serverActions.getActiveEngagementStats = {
+      success: true,
+      hasData: !!stats,
+      data: stats,
+    }
+  } catch (e) {
+    results.serverActions.getActiveEngagementStats = {
+      success: false,
+      error: String(e),
+      stack: e instanceof Error ? e.stack : null,
+    }
+  }
+
+  // Test getActiveEngagements server action
+  try {
+    const engagements = await getActiveEngagements()
+    results.serverActions.getActiveEngagements = {
+      success: true,
+      count: engagements?.length || 0,
+    }
+  } catch (e) {
+    results.serverActions.getActiveEngagements = {
+      success: false,
+      error: String(e),
+      stack: e instanceof Error ? e.stack : null,
+    }
+  }
+
+  // Test getTeamMembers server action (only if activeTeamId exists)
+  if (activeTeamId) {
+    try {
+      const members = await getTeamMembers(activeTeamId)
+      results.serverActions.getTeamMembers = {
+        success: true,
+        count: members?.length || 0,
+        members: members?.map(m => ({ id: m.id, role: m.role, email: m.user?.email })) || [],
+      }
+    } catch (e) {
+      results.serverActions.getTeamMembers = {
+        success: false,
+        error: String(e),
+        stack: e instanceof Error ? e.stack : null,
+      }
+    }
   }
 
   return NextResponse.json(results, { status: 200 })
