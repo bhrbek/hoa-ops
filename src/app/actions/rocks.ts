@@ -196,12 +196,12 @@ export async function updateRock(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get rock's team and owner to check access
+  // Get rock's team and owner to check access - use maybeSingle() as rock might not exist
   const { data: rock } = await (supabase as any)
     .from('rocks')
     .select('team_id, owner_id')
     .eq('id', rockId)
-    .single()
+    .maybeSingle()
 
   if (!rock) throw new Error('Rock not found')
 
@@ -240,12 +240,12 @@ export async function deleteRock(rockId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get rock's team and owner to check access
+  // Get rock's team and owner to check access - use maybeSingle() as rock might not exist
   const { data: rock } = await (supabase as any)
     .from('rocks')
     .select('team_id, owner_id')
     .eq('id', rockId)
-    .single()
+    .maybeSingle()
 
   if (!rock) throw new Error('Rock not found')
 

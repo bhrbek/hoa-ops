@@ -113,12 +113,12 @@ export async function updateCustomer(
 ): Promise<Customer> {
   const supabase = await createClient()
 
-  // Get customer's org to check permissions
+  // Get customer's org to check permissions - use maybeSingle() as customer might not exist
   const { data: customer } = await (supabase as any)
     .from('customers')
     .select('org_id')
     .eq('id', customerId)
-    .single()
+    .maybeSingle()
 
   if (!customer) throw new Error('Customer not found')
 
@@ -150,12 +150,12 @@ export async function deleteCustomer(customerId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get customer's org to check permissions
+  // Get customer's org to check permissions - use maybeSingle() as customer might not exist
   const { data: customer } = await (supabase as any)
     .from('customers')
     .select('org_id')
     .eq('id', customerId)
-    .single()
+    .maybeSingle()
 
   if (!customer) throw new Error('Customer not found')
 

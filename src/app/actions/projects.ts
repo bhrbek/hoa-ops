@@ -162,12 +162,12 @@ export async function createProject(data: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get rock's team_id
+  // Get rock's team_id - use maybeSingle() as rock might not exist
   const { data: rock } = await (supabase as any)
     .from('rocks')
     .select('team_id')
     .eq('id', data.rock_id)
-    .single()
+    .maybeSingle()
 
   if (!rock) throw new Error('Rock not found')
 
@@ -209,12 +209,12 @@ export async function updateProject(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get project's team and owner to check access
+  // Get project's team and owner to check access - use maybeSingle() as project might not exist
   const { data: project } = await (supabase as any)
     .from('projects')
     .select('team_id, owner_id')
     .eq('id', projectId)
-    .single()
+    .maybeSingle()
 
   if (!project) throw new Error('Project not found')
 
@@ -253,12 +253,12 @@ export async function deleteProject(projectId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get project's team and owner to check access
+  // Get project's team and owner to check access - use maybeSingle() as project might not exist
   const { data: project } = await (supabase as any)
     .from('projects')
     .select('team_id, owner_id')
     .eq('id', projectId)
-    .single()
+    .maybeSingle()
 
   if (!project) throw new Error('Project not found')
 

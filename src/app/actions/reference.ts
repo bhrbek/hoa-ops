@@ -117,11 +117,12 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Use maybeSingle() - profile might not exist if trigger didn't fire
   const { data, error } = await (supabase as any)
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('Error fetching current profile:', error)

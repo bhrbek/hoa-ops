@@ -25,11 +25,12 @@ export async function getCurrentUser(): Promise<Profile | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Use maybeSingle() - profile might not exist if trigger didn't fire
   const { data: profile } = await (supabase as any)
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   return profile
 }
@@ -43,12 +44,12 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Get profile
+  // Get profile - use maybeSingle() as profile might not exist
   const { data: profile } = await (supabase as any)
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!profile) return null
 
@@ -138,14 +139,14 @@ export async function getActiveTeam(): Promise<ActiveTeamContext | null> {
 
   if (!team) return null
 
-  // Get user's role in this team
+  // Get user's role in this team - use maybeSingle() as user might not be a member
   const { data: membership } = await (supabase as any)
     .from('team_memberships')
     .select('role')
     .eq('team_id', activeTeamId)
     .eq('user_id', user.id)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   if (!membership) return null
 
@@ -196,14 +197,14 @@ export async function requireTeamAccess(teamId: string): Promise<{
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Check team membership
+  // Check team membership - use maybeSingle() as user might not be a member
   const { data: membership } = await (supabase as any)
     .from('team_memberships')
     .select('role')
     .eq('team_id', teamId)
     .eq('user_id', user.id)
     .is('deleted_at', null)
-    .single()
+    .maybeSingle()
 
   // Get team's org to check org admin status
   const { data: team } = await (supabase as any)

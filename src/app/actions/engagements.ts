@@ -215,12 +215,12 @@ export async function updateEngagement(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get engagement's team to check access
+  // Get engagement's team to check access - use maybeSingle() as engagement might not exist
   const { data: engagement } = await (supabase as any)
     .from('engagements')
     .select('team_id')
     .eq('id', engagementId)
-    .single()
+    .maybeSingle()
 
   if (!engagement) throw new Error('Engagement not found')
 
@@ -292,12 +292,12 @@ export async function updateEngagement(
 export async function deleteEngagement(engagementId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get engagement's team to check access
+  // Get engagement's team to check access - use maybeSingle() as engagement might not exist
   const { data: engagement } = await (supabase as any)
     .from('engagements')
     .select('team_id')
     .eq('id', engagementId)
-    .single()
+    .maybeSingle()
 
   if (!engagement) throw new Error('Engagement not found')
 

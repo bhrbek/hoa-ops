@@ -129,12 +129,12 @@ export async function updateTeam(
 export async function deleteTeam(teamId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get team's org
+  // Get team's org - use maybeSingle() as team might not exist
   const { data: team } = await (supabase as any)
     .from('teams')
     .select('org_id')
     .eq('id', teamId)
-    .single()
+    .maybeSingle()
 
   if (!team) throw new Error('Team not found')
 

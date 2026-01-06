@@ -149,23 +149,23 @@ export async function createCommitment(data: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get project's team and rock
+  // Get project's team and rock - use maybeSingle() as project might not exist
   const { data: project } = await (supabase as any)
     .from('projects')
     .select('team_id, rock_id')
     .eq('id', data.project_id)
-    .single()
+    .maybeSingle()
 
   if (!project) throw new Error('Project not found')
 
   await requireTeamAccess(project.team_id)
 
-  // Validate build signal belongs to the same rock
+  // Validate build signal belongs to the same rock - use maybeSingle() as signal might not exist
   const { data: signal } = await (supabase as any)
     .from('build_signals')
     .select('rock_id')
     .eq('id', data.build_signal_id)
-    .single()
+    .maybeSingle()
 
   if (!signal) throw new Error('Build signal not found')
   if (signal.rock_id !== project.rock_id) {
@@ -212,12 +212,12 @@ export async function updateCommitment(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get commitment to check ownership
+  // Get commitment to check ownership - use maybeSingle() as commitment might not exist
   const { data: commitment } = await (supabase as any)
     .from('commitments')
     .select('owner_id, team_id')
     .eq('id', commitmentId)
-    .single()
+    .maybeSingle()
 
   if (!commitment) throw new Error('Commitment not found')
 
@@ -392,12 +392,12 @@ export async function dropCommitment(commitmentId: string): Promise<CommitmentCa
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  // Get commitment to check ownership
+  // Get commitment to check ownership - use maybeSingle() as commitment might not exist
   const { data: commitment } = await (supabase as any)
     .from('commitments')
     .select('owner_id, team_id')
     .eq('id', commitmentId)
-    .single()
+    .maybeSingle()
 
   if (!commitment) throw new Error('Commitment not found')
 
