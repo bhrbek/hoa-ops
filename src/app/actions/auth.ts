@@ -64,7 +64,7 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
         id,
         name,
         description,
-        org:orgs(id, name, slug)
+        org:orgs(id, name)
       )
     `)
     .eq('user_id', user.id)
@@ -80,7 +80,7 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
   const { data: adminOrgs, error: adminOrgsError } = await (supabase as any)
     .from('org_admins')
     .select(`
-      org:orgs(id, name, slug)
+      org:orgs(id, name)
     `)
     .eq('user_id', user.id)
 
