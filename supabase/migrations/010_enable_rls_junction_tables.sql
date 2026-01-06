@@ -6,23 +6,28 @@
 -- ============================================
 ALTER TABLE public.domain_oems ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read domain-OEM mappings (reference data)
+DROP POLICY IF EXISTS "domain_oems_select" ON public.domain_oems;
+DROP POLICY IF EXISTS "domain_oems_insert" ON public.domain_oems;
+DROP POLICY IF EXISTS "domain_oems_delete" ON public.domain_oems;
+
 CREATE POLICY "domain_oems_select" ON public.domain_oems
   FOR SELECT USING (true);
 
--- Org admins can manage domain-OEM mappings
 CREATE POLICY "domain_oems_insert" ON public.domain_oems
-  FOR INSERT WITH CHECK (true); -- Controlled by server actions
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "domain_oems_delete" ON public.domain_oems
-  FOR DELETE USING (true); -- Controlled by server actions
+  FOR DELETE USING (true);
 
 -- ============================================
 -- engagement_tags (linking engagements and tags)
 -- ============================================
 ALTER TABLE public.engagement_tags ENABLE ROW LEVEL SECURITY;
 
--- Team members can read engagement tags for their team's engagements
+DROP POLICY IF EXISTS "engagement_tags_select" ON public.engagement_tags;
+DROP POLICY IF EXISTS "engagement_tags_insert" ON public.engagement_tags;
+DROP POLICY IF EXISTS "engagement_tags_delete" ON public.engagement_tags;
+
 CREATE POLICY "engagement_tags_select" ON public.engagement_tags
   FOR SELECT USING (
     EXISTS (
@@ -32,7 +37,6 @@ CREATE POLICY "engagement_tags_select" ON public.engagement_tags
     )
   );
 
--- Team members can manage engagement tags for their team
 CREATE POLICY "engagement_tags_insert" ON public.engagement_tags
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -56,11 +60,14 @@ CREATE POLICY "engagement_tags_delete" ON public.engagement_tags
 -- ============================================
 ALTER TABLE public.themes ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read themes (reference data)
+DROP POLICY IF EXISTS "themes_select" ON public.themes;
+DROP POLICY IF EXISTS "themes_insert" ON public.themes;
+DROP POLICY IF EXISTS "themes_update" ON public.themes;
+DROP POLICY IF EXISTS "themes_delete" ON public.themes;
+
 CREATE POLICY "themes_select" ON public.themes
   FOR SELECT USING (true);
 
--- Only service role can manage themes
 CREATE POLICY "themes_insert" ON public.themes
   FOR INSERT WITH CHECK (true);
 
@@ -75,7 +82,10 @@ CREATE POLICY "themes_delete" ON public.themes
 -- ============================================
 ALTER TABLE public.engagement_assets ENABLE ROW LEVEL SECURITY;
 
--- Team members can read engagement-asset links for their team
+DROP POLICY IF EXISTS "engagement_assets_select" ON public.engagement_assets;
+DROP POLICY IF EXISTS "engagement_assets_insert" ON public.engagement_assets;
+DROP POLICY IF EXISTS "engagement_assets_delete" ON public.engagement_assets;
+
 CREATE POLICY "engagement_assets_select" ON public.engagement_assets
   FOR SELECT USING (
     EXISTS (
@@ -85,7 +95,6 @@ CREATE POLICY "engagement_assets_select" ON public.engagement_assets
     )
   );
 
--- Team members can manage engagement-asset links
 CREATE POLICY "engagement_assets_insert" ON public.engagement_assets
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -109,7 +118,10 @@ CREATE POLICY "engagement_assets_delete" ON public.engagement_assets
 -- ============================================
 ALTER TABLE public.project_assets ENABLE ROW LEVEL SECURITY;
 
--- Team members can read project-asset links for their team
+DROP POLICY IF EXISTS "project_assets_select" ON public.project_assets;
+DROP POLICY IF EXISTS "project_assets_insert" ON public.project_assets;
+DROP POLICY IF EXISTS "project_assets_delete" ON public.project_assets;
+
 CREATE POLICY "project_assets_select" ON public.project_assets
   FOR SELECT USING (
     EXISTS (
@@ -119,7 +131,6 @@ CREATE POLICY "project_assets_select" ON public.project_assets
     )
   );
 
--- Team members can manage project-asset links
 CREATE POLICY "project_assets_insert" ON public.project_assets
   FOR INSERT WITH CHECK (
     EXISTS (

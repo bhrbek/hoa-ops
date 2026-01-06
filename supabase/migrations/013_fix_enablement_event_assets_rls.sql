@@ -1,6 +1,10 @@
 -- Add RLS policies for enablement_event_assets junction table
 -- This table links enablement events to assets
 
+DROP POLICY IF EXISTS "enablement_event_assets_select" ON public.enablement_event_assets;
+DROP POLICY IF EXISTS "enablement_event_assets_insert" ON public.enablement_event_assets;
+DROP POLICY IF EXISTS "enablement_event_assets_delete" ON public.enablement_event_assets;
+
 -- Team members can read enablement event assets for their team
 CREATE POLICY "enablement_event_assets_select" ON public.enablement_event_assets
   FOR SELECT USING (
