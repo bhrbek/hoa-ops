@@ -150,12 +150,13 @@ export async function getActiveTeam(): Promise<ActiveTeamContext | null> {
   if (!membership) return null
 
   // Check if user is org admin
-  const { data: orgAdmin, error: orgAdminError } = await (supabase as any)
+  // Use maybeSingle() instead of single() - single() errors on 0 rows
+  const { data: orgAdmin } = await (supabase as any)
     .from('org_admins')
     .select('id')
     .eq('org_id', team.org_id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   return {
     team: team as Team,
@@ -213,13 +214,13 @@ export async function requireTeamAccess(teamId: string): Promise<{
 
   if (!team) throw new Error('Team not found')
 
-  // Check if org admin
+  // Check if org admin - use maybeSingle() to avoid error on 0 rows
   const { data: orgAdmin } = await (supabase as any)
     .from('org_admins')
     .select('id')
     .eq('org_id', team.org_id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   const isOrgAdmin = !!orgAdmin
 
@@ -268,12 +269,13 @@ export async function requireOrgAdmin(orgId: string): Promise<{ userId: string }
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  // Use maybeSingle() to avoid error on 0 rows (RLS might also block)
   const { data: orgAdmin } = await (supabase as any)
     .from('org_admins')
     .select('id')
     .eq('org_id', orgId)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!orgAdmin) {
     throw new Error('Access denied: org admin required')

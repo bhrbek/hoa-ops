@@ -138,13 +138,13 @@ export async function addOrgAdmin(orgId: string, userId: string): Promise<OrgAdm
   await requireOrgAdmin(orgId)
   const supabase = await createClient()
 
-  // Check if already admin
+  // Check if already admin - use maybeSingle() for proper null handling
   const { data: existing } = await (supabase as any)
     .from('org_admins')
     .select('id')
     .eq('org_id', orgId)
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     throw new Error('User is already an org admin')
