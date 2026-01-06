@@ -2,11 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import type { Rock, RockWithProjects, RockWithEvidence } from '@/types/supabase'
+import { requireTeamAccess, requireTeamRole, getActiveTeam } from './auth'
+import type { Rock, RockWithProjects, RockWithBuildSignals, RockWithAll } from '@/types/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export async function getRocks(quarter?: string): Promise<RockWithProjects[]> {
+/**
+ * Get rocks for a team
+ */
+export async function getRocks(teamId: string, quarter?: string): Promise<RockWithProjects[]> {
+  await requireTeamAccess(teamId)
   const supabase = await createClient()
 
   let query = (supabase as any)
@@ -16,6 +21,8 @@ export async function getRocks(quarter?: string): Promise<RockWithProjects[]> {
       owner:profiles(*),
       projects(*)
     `)
+    .eq('team_id', teamId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   if (quarter) {
@@ -32,7 +39,84 @@ export async function getRocks(quarter?: string): Promise<RockWithProjects[]> {
   return data as RockWithProjects[]
 }
 
-export async function getRockWithEvidence(rockId: string): Promise<RockWithEvidence | null> {
+/**
+ * Get rocks for the active team
+ */
+export async function getActiveRocks(quarter?: string): Promise<RockWithProjects[]> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam) throw new Error('No active team')
+
+  return getRocks(activeTeam.team.id, quarter)
+}
+
+/**
+ * Get a single rock with projects
+ */
+export async function getRock(rockId: string): Promise<RockWithProjects | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as any)
+    .from('rocks')
+    .select(`
+      *,
+      owner:profiles(*),
+      projects(*)
+    `)
+    .eq('id', rockId)
+    .is('deleted_at', null)
+    .single()
+
+  if (error || !data) {
+    console.error('Error fetching rock:', error)
+    return null
+  }
+
+  // Verify team access before returning data
+  try {
+    await requireTeamAccess(data.team_id)
+  } catch {
+    return null
+  }
+
+  return data as RockWithProjects
+}
+
+/**
+ * Get a rock with build signals
+ */
+export async function getRockWithBuildSignals(rockId: string): Promise<RockWithBuildSignals | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as any)
+    .from('rocks')
+    .select(`
+      *,
+      owner:profiles(*),
+      build_signals(*)
+    `)
+    .eq('id', rockId)
+    .is('deleted_at', null)
+    .single()
+
+  if (error || !data) {
+    console.error('Error fetching rock:', error)
+    return null
+  }
+
+  // Verify team access before returning data
+  try {
+    await requireTeamAccess(data.team_id)
+  } catch {
+    return null
+  }
+
+  return data as RockWithBuildSignals
+}
+
+/**
+ * Get a rock with all relations (projects, build signals, evidence)
+ */
+export async function getRockWithAll(rockId: string): Promise<RockWithAll | null> {
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
@@ -41,38 +125,51 @@ export async function getRockWithEvidence(rockId: string): Promise<RockWithEvide
       *,
       owner:profiles(*),
       projects(*),
+      build_signals(*),
       evidence:engagements(*)
     `)
     .eq('id', rockId)
+    .is('deleted_at', null)
     .single()
 
-  if (error) {
+  if (error || !data) {
     console.error('Error fetching rock:', error)
     return null
   }
 
-  return data as RockWithEvidence
+  // Verify team access before returning data
+  try {
+    await requireTeamAccess(data.team_id)
+  } catch {
+    return null
+  }
+
+  return data as RockWithAll
 }
 
+/**
+ * Create a new rock
+ */
 export async function createRock(data: {
+  team_id: string
   title: string
   perfect_outcome: string
   worst_outcome?: string
   quarter?: string
+  owner_id?: string
 }): Promise<Rock> {
+  const { userId } = await requireTeamAccess(data.team_id)
   const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
 
   const { data: rock, error } = await (supabase as any)
     .from('rocks')
     .insert({
+      team_id: data.team_id,
       title: data.title,
       perfect_outcome: data.perfect_outcome,
       worst_outcome: data.worst_outcome,
       quarter: data.quarter || 'Q1 2026',
-      owner_id: user.id,
+      owner_id: data.owner_id || userId,
     })
     .select()
     .single()
@@ -87,13 +184,37 @@ export async function createRock(data: {
   return rock
 }
 
+/**
+ * Update a rock
+ */
 export async function updateRock(
   rockId: string,
-  data: Partial<Pick<Rock, 'title' | 'status' | 'perfect_outcome' | 'worst_outcome' | 'progress_override'>>
+  data: Partial<Pick<Rock, 'title' | 'status' | 'perfect_outcome' | 'worst_outcome' | 'progress_override' | 'owner_id'>>
 ): Promise<Rock> {
   const supabase = await createClient()
 
-  const { data: rock, error } = await (supabase as any)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Get rock's team and owner to check access
+  const { data: rock } = await (supabase as any)
+    .from('rocks')
+    .select('team_id, owner_id')
+    .eq('id', rockId)
+    .single()
+
+  if (!rock) throw new Error('Rock not found')
+
+  // Check access - must be owner, manager, or org_admin
+  if (rock.owner_id !== user.id) {
+    // Non-owners must be managers or org admins
+    await requireTeamRole(rock.team_id, 'manager')
+  } else {
+    // Owners still need team access
+    await requireTeamAccess(rock.team_id)
+  }
+
+  const { data: updated, error } = await (supabase as any)
     .from('rocks')
     .update(data)
     .eq('id', rockId)
@@ -107,15 +228,45 @@ export async function updateRock(
 
   revalidatePath('/climb')
   revalidatePath('/')
-  return rock
+  return updated
 }
 
+/**
+ * Soft delete a rock
+ */
 export async function deleteRock(rockId: string): Promise<void> {
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Get rock's team and owner to check access
+  const { data: rock } = await (supabase as any)
+    .from('rocks')
+    .select('team_id, owner_id')
+    .eq('id', rockId)
+    .single()
+
+  if (!rock) throw new Error('Rock not found')
+
+  // Check access - must be owner, manager, or org_admin
+  let userId: string
+  if (rock.owner_id !== user.id) {
+    // Non-owners must be managers or org admins
+    const access = await requireTeamRole(rock.team_id, 'manager')
+    userId = access.userId
+  } else {
+    // Owners still need team access
+    const access = await requireTeamAccess(rock.team_id)
+    userId = access.userId
+  }
+
   const { error } = await (supabase as any)
     .from('rocks')
-    .delete()
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: userId
+    })
     .eq('id', rockId)
 
   if (error) {
@@ -127,6 +278,9 @@ export async function deleteRock(rockId: string): Promise<void> {
   revalidatePath('/')
 }
 
+/**
+ * Calculate rock progress using database function
+ */
 export async function calculateRockProgress(rockId: string): Promise<number> {
   const supabase = await createClient()
 
@@ -139,4 +293,31 @@ export async function calculateRockProgress(rockId: string): Promise<number> {
   }
 
   return data
+}
+
+/**
+ * Get rocks by status for a team
+ */
+export async function getRocksByStatus(teamId: string, status: string): Promise<RockWithProjects[]> {
+  await requireTeamAccess(teamId)
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as any)
+    .from('rocks')
+    .select(`
+      *,
+      owner:profiles(*),
+      projects(*)
+    `)
+    .eq('team_id', teamId)
+    .eq('status', status)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching rocks by status:', error)
+    return []
+  }
+
+  return data as RockWithProjects[]
 }
