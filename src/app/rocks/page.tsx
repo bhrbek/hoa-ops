@@ -15,6 +15,7 @@ import {
   Users,
   MoreVertical,
   Calendar,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,127 +24,117 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
 import { useTeam } from "@/contexts/team-context"
+import { getActiveRocks } from "@/app/actions/rocks"
+import { getActiveEngagements } from "@/app/actions/engagements"
+import type { RockWithProjects, EngagementWithRelations } from "@/types/supabase"
 
-// Mock data
-const rocks = [
-  {
-    id: "1",
-    title: "Launch Enterprise API Integration",
-    quarter: "Q1 2026",
-    status: "On Track",
-    perfectOutcome: "5 Beta clients live by Sept 30 with full API integration, generating $500k pipeline.",
-    worstOutcome: "API delayed to Q2, losing competitive window and 2 key prospects.",
-    progress: 65,
-    owner: { name: "Sarah J.", initials: "SJ", color: "bg-indigo-100 text-indigo-700" },
-    projects: [
-      {
-        id: "p1",
-        title: "Backend Architecture Upgrade",
-        owner: { name: "Mike K.", initials: "MK", color: "bg-pink-100 text-pink-700" },
-        startDate: "2026-01-01",
-        endDate: "2026-02-15",
-        status: "Active",
-        estimatedHours: 80,
-      },
-      {
-        id: "p2",
-        title: "Client Portal UI Implementation",
-        owner: { name: "Alex L.", initials: "AL", color: "bg-teal-100 text-teal-700" },
-        startDate: "2026-02-01",
-        endDate: "2026-03-15",
-        status: "Active",
-        estimatedHours: 120,
-      },
-      {
-        id: "p3",
-        title: "API Documentation & SDK",
-        owner: { name: "David R.", initials: "DR", color: "bg-amber-100 text-amber-700" },
-        startDate: "2026-02-15",
-        endDate: "2026-03-30",
-        status: "Active",
-        estimatedHours: 40,
-      },
-    ],
-    evidence: [
-      { id: "e1", customer: "Acme Corp", type: "Workshop", date: "2026-01-02", revenue: 45000 },
-      { id: "e2", customer: "Globex Inc", type: "Demo", date: "2025-12-28", revenue: 0 },
-      { id: "e3", customer: "Initech", type: "POC", date: "2025-12-15", revenue: 125000 },
-    ],
-  },
-  {
-    id: "2",
-    title: "Q1 Marketing Blitz",
-    quarter: "Q1 2026",
-    status: "At Risk",
-    perfectOutcome: "1000 MQLs generated with 15% conversion to SQL.",
-    worstOutcome: "Under 500 MQLs, pipeline gap for Q2.",
-    progress: 35,
-    owner: { name: "David K.", initials: "DK", color: "bg-orange-100 text-orange-700" },
-    projects: [
-      {
-        id: "p4",
-        title: "Content Campaign Launch",
-        owner: { name: "Emma W.", initials: "EW", color: "bg-purple-100 text-purple-700" },
-        startDate: "2026-01-05",
-        endDate: "2026-02-28",
-        status: "Active",
-        estimatedHours: 60,
-      },
-      {
-        id: "p5",
-        title: "Webinar Series",
-        owner: { name: "James K.", initials: "JK", color: "bg-blue-100 text-blue-700" },
-        startDate: "2026-01-15",
-        endDate: "2026-03-15",
-        status: "Active",
-        estimatedHours: 40,
-      },
-    ],
-    evidence: [
-      { id: "e4", customer: "Wayne Enterprises", type: "Workshop", date: "2026-01-01", revenue: 0 },
-    ],
-  },
-  {
-    id: "3",
-    title: "Expand Sales Team",
-    quarter: "Q1 2026",
-    status: "On Track",
-    perfectOutcome: "3 AEs and 2 SDRs hired and ramped by end of Q1.",
-    worstOutcome: "Only 2 hires complete, 60-day ramp delay.",
-    progress: 90,
-    owner: { name: "Maria S.", initials: "MS", color: "bg-blue-100 text-blue-700" },
-    projects: [
-      {
-        id: "p6",
-        title: "AE Recruitment",
-        owner: { name: "HR Team", initials: "HR", color: "bg-slate-100 text-slate-700" },
-        startDate: "2025-12-01",
-        endDate: "2026-02-15",
-        status: "Done",
-        estimatedHours: 100,
-      },
-      {
-        id: "p7",
-        title: "SDR Recruitment",
-        owner: { name: "HR Team", initials: "HR", color: "bg-slate-100 text-slate-700" },
-        startDate: "2025-12-15",
-        endDate: "2026-02-28",
-        status: "Done",
-        estimatedHours: 60,
-      },
-      {
-        id: "p8",
-        title: "Onboarding Program",
-        owner: { name: "Training", initials: "TR", color: "bg-green-100 text-green-700" },
-        startDate: "2026-02-01",
-        endDate: "2026-03-30",
-        status: "Active",
-        estimatedHours: 80,
-      },
-    ],
-    evidence: [],
-  },
+// Avatar color palette for consistent user colors
+const AVATAR_COLORS = [
+  "bg-indigo-100 text-indigo-700",
+  "bg-amber-100 text-amber-700",
+  "bg-pink-100 text-pink-700",
+  "bg-teal-100 text-teal-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-purple-100 text-purple-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
+  "bg-orange-100 text-orange-700",
+  "bg-blue-100 text-blue-700",
 ]
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function getAvatarColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash) + id.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+type UIRock = {
+  id: string
+  title: string
+  quarter: string
+  status: string
+  perfectOutcome: string
+  worstOutcome: string | null
+  progress: number
+  owner: { name: string; initials: string; color: string }
+  projects: {
+    id: string
+    title: string
+    owner: { name: string; initials: string; color: string }
+    startDate: string
+    endDate: string
+    status: string
+    estimatedHours: number
+  }[]
+  evidence: {
+    id: string
+    customer: string
+    type: string
+    date: string
+    revenue: number
+  }[]
+}
+
+function transformRock(rock: RockWithProjects, engagements: EngagementWithRelations[]): UIRock {
+  const ownerName = rock.owner?.full_name || 'Unknown'
+  const ownerId = rock.owner?.id || rock.owner_id || rock.id
+
+  // Filter engagements linked to this rock
+  const linkedEngagements = engagements.filter(e => e.rock_id === rock.id)
+
+  return {
+    id: rock.id,
+    title: rock.title,
+    quarter: rock.quarter,
+    status: rock.status,
+    perfectOutcome: rock.perfect_outcome,
+    worstOutcome: rock.worst_outcome,
+    progress: rock.progress_override ?? 0,
+    owner: {
+      name: ownerName,
+      initials: getInitials(ownerName),
+      color: getAvatarColor(ownerId),
+    },
+    projects: (rock.projects || [])
+      .filter(p => !p.deleted_at)
+      .map(p => {
+        const projOwnerName = (p as { owner?: { full_name: string } }).owner?.full_name || 'Unknown'
+        const projOwnerId = p.owner_id || p.id
+        return {
+          id: p.id,
+          title: p.title,
+          owner: {
+            name: projOwnerName,
+            initials: getInitials(projOwnerName),
+            color: getAvatarColor(projOwnerId),
+          },
+          startDate: p.start_date || new Date().toISOString().split('T')[0],
+          endDate: p.end_date || new Date().toISOString().split('T')[0],
+          status: p.status,
+          estimatedHours: p.estimated_hours,
+        }
+      }),
+    evidence: linkedEngagements.map(e => ({
+      id: e.id,
+      customer: e.customer?.name || e.customer_name,
+      type: e.activity_type,
+      date: e.date,
+      revenue: e.revenue_impact,
+    })),
+  }
+}
 
 function getStatusConfig(status: string) {
   switch (status) {
@@ -198,9 +189,46 @@ function getGanttPosition(startDate: string, endDate: string) {
   return { left: `${startPercent}%`, width: `${widthPercent}%` }
 }
 
-export default function ClimbPage() {
-  const [expandedRocks, setExpandedRocks] = React.useState<string[]>(["1"])
+export default function RocksPage() {
+  const [expandedRocks, setExpandedRocks] = React.useState<string[]>([])
+  const [rocks, setRocks] = React.useState<UIRock[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(true)
   const { activeTeam, isLoading } = useTeam()
+
+  // Fetch rocks and engagements when team changes
+  React.useEffect(() => {
+    async function fetchData() {
+      if (!activeTeam) {
+        setRocks([])
+        setIsLoadingData(false)
+        return
+      }
+
+      setIsLoadingData(true)
+      try {
+        // Fetch rocks and engagements in parallel
+        const [rocksData, engagementsData] = await Promise.all([
+          getActiveRocks(),
+          getActiveEngagements({ limit: 500 })
+        ])
+
+        const transformedRocks = rocksData.map(rock => transformRock(rock, engagementsData))
+        setRocks(transformedRocks)
+
+        // Auto-expand first rock if available
+        if (transformedRocks.length > 0 && expandedRocks.length === 0) {
+          setExpandedRocks([transformedRocks[0].id])
+        }
+      } catch (error) {
+        console.error('Failed to fetch rocks:', error)
+        setRocks([])
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchData()
+  }, [activeTeam?.id])
 
   const toggleRock = (rockId: string) => {
     setExpandedRocks((prev) =>
@@ -209,6 +237,14 @@ export default function ClimbPage() {
         : [...prev, rockId]
     )
   }
+
+  const isPageLoading = isLoading || isLoadingData
+
+  // Calculate summary stats
+  const avgProgress = rocks.length > 0
+    ? Math.round(rocks.reduce((sum, r) => sum + r.progress, 0) / rocks.length)
+    : 0
+  const atRiskCount = rocks.filter(r => r.status === 'At Risk' || r.status === 'Off Track').length
 
   return (
     <div className="min-h-screen bg-white">
@@ -225,7 +261,7 @@ export default function ClimbPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Climb</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Rocks</h1>
             <p className="text-sm text-slate-500">
               Track your quarterly Rocks, supporting projects, and Build Signals.
             </p>
@@ -235,12 +271,14 @@ export default function ClimbPage() {
             <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-slate-50 rounded-lg border border-slate-200">
               <div>
                 <p className="text-xs text-slate-500">Avg Progress</p>
-                <p className="text-lg font-bold text-slate-900">63%</p>
+                <p className="text-lg font-bold text-slate-900">{avgProgress}%</p>
               </div>
               <div className="h-8 w-px bg-slate-200" />
               <div>
                 <p className="text-xs text-slate-500">At Risk</p>
-                <p className="text-lg font-bold text-amber-600">1</p>
+                <p className={cn("text-lg font-bold", atRiskCount > 0 ? "text-amber-600" : "text-slate-400")}>
+                  {atRiskCount}
+                </p>
               </div>
             </div>
             <Button variant="primary" className="gap-2">
@@ -270,6 +308,24 @@ export default function ClimbPage() {
         </div>
 
         {/* Rocks Accordion */}
+        {isPageLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            <span className="ml-3 text-slate-500">Loading rocks...</span>
+          </div>
+        ) : rocks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Flag className="h-12 w-12 text-slate-300 mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Rocks Yet</h3>
+            <p className="text-sm text-slate-500 max-w-md mb-4">
+              Rocks represent your quarterly strategic priorities. Create your first Rock to start tracking capability creation.
+            </p>
+            <Button variant="primary" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Your First Rock
+            </Button>
+          </div>
+        ) : (
         <div className="space-y-4">
           {rocks.map((rock) => {
             const isExpanded = expandedRocks.includes(rock.id)
@@ -522,6 +578,7 @@ export default function ClimbPage() {
             )
           })}
         </div>
+        )}
 
         {/* Add New Rock */}
         <div className="mt-6 border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer group">

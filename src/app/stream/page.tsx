@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Link2,
   Download,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,76 +21,72 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
 import { useTeam } from "@/contexts/team-context"
+import { getActiveEngagements } from "@/app/actions/engagements"
+import type { EngagementWithRelations } from "@/types/supabase"
 
-// Mock engagement data
-const engagements = [
-  {
-    id: "1",
-    date: "2026-01-02",
-    customer: "Acme Corporation",
-    domains: ["Cloud"],
-    oems: ["AWS", "HashiCorp"],
-    revenue: 15000,
-    gp: 4200,
-    linkedRock: "Q1 Enterprise Cloud Migration",
-    owner: { name: "Sarah J.", initials: "SJ", color: "bg-indigo-100 text-indigo-700" },
-  },
-  {
-    id: "2",
-    date: "2026-01-01",
-    customer: "Globex Inc.",
-    domains: ["Security"],
-    oems: ["Cisco", "Palo Alto", "+2"],
-    revenue: 8500,
-    gp: 2100,
-    linkedRock: null,
-    owner: { name: "Mike R.", initials: "MR", color: "bg-amber-100 text-amber-700" },
-  },
-  {
-    id: "3",
-    date: "2025-12-30",
-    customer: "Soylent Corp",
-    domains: ["Infra"],
-    oems: ["Dell"],
-    revenue: 22000,
-    gp: 5500,
-    linkedRock: "Network Modernization Initiative",
-    owner: { name: "Jessica T.", initials: "JT", color: "bg-pink-100 text-pink-700" },
-  },
-  {
-    id: "4",
-    date: "2025-12-29",
-    customer: "Initech",
-    domains: ["Cloud"],
-    oems: ["Azure"],
-    revenue: 12000,
-    gp: 3000,
-    linkedRock: "Q1 Enterprise Cloud Migration",
-    owner: { name: "David B.", initials: "DB", color: "bg-teal-100 text-teal-700" },
-  },
-  {
-    id: "5",
-    date: "2025-12-28",
-    customer: "Stark Industries",
-    domains: ["Security"],
-    oems: ["Fortinet", "CrowdStrike"],
-    revenue: 45000,
-    gp: 12250,
-    linkedRock: "Security Operations Overhaul",
-    owner: { name: "Sarah J.", initials: "SJ", color: "bg-indigo-100 text-indigo-700" },
-  },
-  {
-    id: "6",
-    date: "2025-12-27",
-    customer: "Wayne Enterprises",
-    domains: ["Network", "Security"],
-    oems: ["Cisco", "Arista"],
-    revenue: 67000,
-    gp: 18500,
-    linkedRock: null,
-    owner: { name: "Alex T.", initials: "AT", color: "bg-emerald-100 text-emerald-700" },
-  },
+// Avatar color palette for consistent user colors
+const AVATAR_COLORS = [
+  "bg-indigo-100 text-indigo-700",
+  "bg-amber-100 text-amber-700",
+  "bg-pink-100 text-pink-700",
+  "bg-teal-100 text-teal-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-purple-100 text-purple-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
 ]
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function getAvatarColor(userId: string): string {
+  // Generate consistent color based on user ID
+  let hash = 0
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) - hash) + userId.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+type UIEngagement = {
+  id: string
+  date: string
+  customer: string
+  domains: string[]
+  oems: string[]
+  revenue: number
+  gp: number
+  linkedRock: string | null
+  owner: { name: string; initials: string; color: string }
+}
+
+function transformEngagement(engagement: EngagementWithRelations): UIEngagement {
+  const ownerName = engagement.owner?.full_name || 'Unknown'
+  const ownerId = engagement.owner?.id || engagement.owner_id
+
+  return {
+    id: engagement.id,
+    date: engagement.date,
+    customer: engagement.customer?.name || engagement.customer_name,
+    domains: engagement.domains?.map(d => d.name) || [],
+    oems: engagement.oems?.map(o => o.name) || [],
+    revenue: engagement.revenue_impact,
+    gp: engagement.gp_impact,
+    linkedRock: engagement.rock?.title || null,
+    owner: {
+      name: ownerName,
+      initials: getInitials(ownerName),
+      color: getAvatarColor(ownerId),
+    },
+  }
+}
 
 function getDomainBadgeVariant(domain: string) {
   switch (domain.toLowerCase()) {
@@ -109,7 +106,33 @@ function getDomainBadgeVariant(domain: string) {
 export default function StreamPage() {
   const [drawerOpen, setDrawerOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [engagements, setEngagements] = React.useState<UIEngagement[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(true)
   const { activeTeam, isLoading } = useTeam()
+
+  // Fetch engagements when team changes
+  React.useEffect(() => {
+    async function fetchEngagements() {
+      if (!activeTeam) {
+        setEngagements([])
+        setIsLoadingData(false)
+        return
+      }
+
+      setIsLoadingData(true)
+      try {
+        const data = await getActiveEngagements({ limit: 100 })
+        setEngagements(data.map(transformEngagement))
+      } catch (error) {
+        console.error('Failed to fetch engagements:', error)
+        setEngagements([])
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchEngagements()
+  }, [activeTeam?.id])
 
   const filteredEngagements = engagements.filter(
     (e) =>
@@ -117,6 +140,8 @@ export default function StreamPage() {
       e.domains.some((d) => d.toLowerCase().includes(searchQuery.toLowerCase())) ||
       e.oems.some((o) => o.toLowerCase().includes(searchQuery.toLowerCase()))
   )
+
+  const isPageLoading = isLoading || isLoadingData
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -184,6 +209,24 @@ export default function StreamPage() {
 
         {/* Data Table */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          {isPageLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <span className="ml-3 text-slate-500">Loading engagements...</span>
+            </div>
+          ) : engagements.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="text-slate-400 mb-2">No engagements yet</div>
+              <p className="text-sm text-slate-500 max-w-md">
+                Log your first engagement to start tracking customer activities and building your business observability.
+              </p>
+              <Button variant="primary" className="mt-4 gap-2" onClick={() => setDrawerOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Log Engagement
+              </Button>
+            </div>
+          ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -285,6 +328,8 @@ export default function StreamPage() {
               </Button>
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
 

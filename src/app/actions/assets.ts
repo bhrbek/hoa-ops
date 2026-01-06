@@ -209,7 +209,7 @@ export async function linkAssetToProject(assetId: string, projectId: string): Pr
     throw new Error('Failed to link asset to project')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
 }
 
 /**
@@ -240,7 +240,7 @@ export async function unlinkAssetFromProject(assetId: string, projectId: string)
     throw new Error('Failed to unlink asset from project')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
 }
 
 /**

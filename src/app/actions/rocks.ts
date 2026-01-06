@@ -179,7 +179,7 @@ export async function createRock(data: {
     throw new Error('Failed to create rock')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return rock
 }
@@ -226,7 +226,7 @@ export async function updateRock(
     throw new Error('Failed to update rock')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return updated
 }
@@ -274,7 +274,7 @@ export async function deleteRock(rockId: string): Promise<void> {
     throw new Error('Failed to delete rock')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
 }
 

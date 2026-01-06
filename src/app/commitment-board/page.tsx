@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Clock,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,10 +19,40 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useTeam } from "@/contexts/team-context"
 import { cn } from "@/lib/utils"
-import type { CommitmentStatus } from "@/types/supabase"
+import { getActiveCommitments } from "@/app/actions/commitments"
+import type { CommitmentStatus, CommitmentWithRelations } from "@/types/supabase"
 
-// Mock data for commitments
-interface MockCommitment {
+// Avatar color palette for consistent user colors
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700",
+  "bg-amber-100 text-amber-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-purple-100 text-purple-700",
+  "bg-pink-100 text-pink-700",
+  "bg-teal-100 text-teal-700",
+  "bg-orange-100 text-orange-700",
+  "bg-cyan-100 text-cyan-700",
+]
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function getAvatarColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash) + id.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+interface UICommitment {
   id: string
   title: string
   definitionOfDone: string
@@ -29,88 +60,27 @@ interface MockCommitment {
   buildSignal: string
   status: CommitmentStatus
   ownerId: string
-  dayIndex: number // 0 = Monday, 4 = Friday
 }
 
-interface MockTeamMember {
+interface UITeamMember {
   id: string
   name: string
   initials: string
   color: string
-  capacityPercent: number
+  commitmentCount: number
 }
 
-const mockTeamMembers: MockTeamMember[] = [
-  { id: "1", name: "Sarah Jenkins", initials: "SJ", color: "bg-blue-100 text-blue-700", capacityPercent: 85 },
-  { id: "2", name: "Mike Rodriguez", initials: "MR", color: "bg-amber-100 text-amber-700", capacityPercent: 72 },
-  { id: "3", name: "Alex Thompson", initials: "AT", color: "bg-emerald-100 text-emerald-700", capacityPercent: 95 },
-  { id: "4", name: "Jessica Lee", initials: "JL", color: "bg-purple-100 text-purple-700", capacityPercent: 60 },
-]
-
-const mockCommitments: MockCommitment[] = [
-  {
-    id: "c1",
-    title: "Complete API spec review",
-    definitionOfDone: "All endpoints documented and reviewed by team",
-    project: "API Integration",
-    buildSignal: "3 partners integrated",
-    status: "done",
-    ownerId: "1",
-    dayIndex: 0,
-  },
-  {
-    id: "c2",
-    title: "POC environment setup",
-    definitionOfDone: "Cloud env provisioned and accessible",
-    project: "Cloud Migration",
-    buildSignal: "MVP deployed",
-    status: "planned",
-    ownerId: "1",
-    dayIndex: 2,
-  },
-  {
-    id: "c3",
-    title: "Security audit prep",
-    definitionOfDone: "Audit checklist completed",
-    project: "Security Overhaul",
-    buildSignal: "Compliance certified",
-    status: "blocked",
-    ownerId: "2",
-    dayIndex: 1,
-  },
-  {
-    id: "c4",
-    title: "Vendor call notes",
-    definitionOfDone: "Meeting summary shared with team",
-    project: "Network Modernization",
-    buildSignal: "Vendor selected",
-    status: "done",
-    ownerId: "2",
-    dayIndex: 0,
-  },
-  {
-    id: "c5",
-    title: "Demo script finalization",
-    definitionOfDone: "Script reviewed and rehearsed",
-    project: "API Integration",
-    buildSignal: "3 partners integrated",
-    status: "planned",
-    ownerId: "3",
-    dayIndex: 3,
-  },
-  {
-    id: "c6",
-    title: "Training materials draft",
-    definitionOfDone: "First draft of training deck",
-    project: "Security Overhaul",
-    buildSignal: "Team trained",
-    status: "slipped",
-    ownerId: "4",
-    dayIndex: 4,
-  },
-]
-
-const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+function transformCommitment(commitment: CommitmentWithRelations): UICommitment {
+  return {
+    id: commitment.id,
+    title: commitment.definition_of_done.slice(0, 50) + (commitment.definition_of_done.length > 50 ? '...' : ''),
+    definitionOfDone: commitment.definition_of_done,
+    project: commitment.project?.title || 'Unknown Project',
+    buildSignal: commitment.build_signal?.title || 'Unknown Signal',
+    status: commitment.status,
+    ownerId: commitment.owner_id,
+  }
+}
 
 function getStatusIcon(status: CommitmentStatus) {
   switch (status) {
@@ -147,12 +117,72 @@ function getWeekString(date: Date): string {
   return `${monday.toLocaleDateString("en-US", options)} - ${friday.toLocaleDateString("en-US", options)}`
 }
 
-export default function CommitmentBoardPage() {
-  const { activeTeam, teamMembers: realTeamMembers, isLoading } = useTeam()
-  const [currentWeek, setCurrentWeek] = React.useState(new Date())
+function getWeekOf(date: Date): string {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  return d.toISOString().split('T')[0]
+}
 
-  // Use mock data for now, will integrate with real data when Phase 3 is complete
-  const displayMembers = mockTeamMembers
+export default function CommitmentBoardPage() {
+  const { activeTeam, isLoading } = useTeam()
+  const [currentWeek, setCurrentWeek] = React.useState(new Date())
+  const [commitments, setCommitments] = React.useState<UICommitment[]>([])
+  const [teamMembers, setTeamMembers] = React.useState<UITeamMember[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(true)
+
+  // Fetch commitments when team or week changes
+  React.useEffect(() => {
+    async function fetchData() {
+      if (!activeTeam) {
+        setCommitments([])
+        setTeamMembers([])
+        setIsLoadingData(false)
+        return
+      }
+
+      setIsLoadingData(true)
+      try {
+        const weekOf = getWeekOf(currentWeek)
+        const data = await getActiveCommitments(weekOf)
+        const transformed = data.map(transformCommitment)
+        setCommitments(transformed)
+
+        // Build team members from commitment owners
+        const memberMap = new Map<string, UITeamMember>()
+        data.forEach(c => {
+          if (c.owner && !memberMap.has(c.owner.id)) {
+            memberMap.set(c.owner.id, {
+              id: c.owner.id,
+              name: c.owner.full_name,
+              initials: getInitials(c.owner.full_name),
+              color: getAvatarColor(c.owner.id),
+              commitmentCount: 0,
+            })
+          }
+        })
+
+        // Count commitments per member
+        transformed.forEach(c => {
+          const member = memberMap.get(c.ownerId)
+          if (member) {
+            member.commitmentCount++
+          }
+        })
+
+        setTeamMembers(Array.from(memberMap.values()))
+      } catch (error) {
+        console.error('Failed to fetch commitments:', error)
+        setCommitments([])
+        setTeamMembers([])
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchData()
+  }, [activeTeam?.id, currentWeek])
 
   const goToPreviousWeek = () => {
     const newDate = new Date(currentWeek)
@@ -170,11 +200,11 @@ export default function CommitmentBoardPage() {
     setCurrentWeek(new Date())
   }
 
-  const getCommitmentsForCell = (memberId: string, dayIndex: number) => {
-    return mockCommitments.filter(
-      (c) => c.ownerId === memberId && c.dayIndex === dayIndex
-    )
+  const getCommitmentsForMember = (memberId: string) => {
+    return commitments.filter(c => c.ownerId === memberId)
   }
+
+  const isPageLoading = isLoading || isLoadingData
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -236,9 +266,27 @@ export default function CommitmentBoardPage() {
         {/* Commitment Board Grid */}
         <Card>
           <CardContent className="p-0">
+            {isPageLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                <span className="ml-3 text-slate-500">Loading commitments...</span>
+              </div>
+            ) : teamMembers.length === 0 && commitments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <CheckCircle2 className="h-12 w-12 text-slate-300 mb-4" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">No Commitments This Week</h3>
+                <p className="text-sm text-slate-500 max-w-md mb-4">
+                  Create commitments to track your weekly execution against Projects and Build Signals.
+                </p>
+                <Button variant="primary" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Commitment
+                </Button>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse min-w-[900px]">
-                {/* Header Row - Days */}
+              <table className="w-full border-collapse min-w-[600px]">
+                {/* Header Row */}
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="w-48 px-4 py-3 text-left bg-slate-50">
@@ -246,29 +294,25 @@ export default function CommitmentBoardPage() {
                         Team Member
                       </span>
                     </th>
-                    {weekDays.map((day, index) => (
-                      <th
-                        key={day}
-                        className={cn(
-                          "px-4 py-3 text-center min-w-[150px]",
-                          index === new Date().getDay() - 1 &&
-                            "bg-blue-50 border-x border-blue-100"
-                        )}
-                      >
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          {day}
-                        </span>
-                      </th>
-                    ))}
+                    <th className="px-4 py-3 text-left bg-slate-50">
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        Weekly Commitments
+                      </span>
+                    </th>
                   </tr>
                 </thead>
 
                 {/* Body Rows - Team Members */}
                 <tbody>
-                  {displayMembers.map((member) => (
+                  {teamMembers.map((member) => {
+                    const memberCommitments = getCommitmentsForMember(member.id)
+                    const doneCount = memberCommitments.filter(c => c.status === 'done').length
+                    const totalCount = memberCommitments.length
+
+                    return (
                     <tr key={member.id} className="border-b border-slate-100">
                       {/* Member Cell */}
-                      <td className="px-4 py-3 bg-slate-50">
+                      <td className="px-4 py-3 bg-slate-50 align-top">
                         <div className="flex items-center gap-3">
                           <div className="relative">
                             <Avatar className={cn("h-8 w-8", member.color)}>
@@ -276,7 +320,7 @@ export default function CommitmentBoardPage() {
                                 {member.initials}
                               </AvatarFallback>
                             </Avatar>
-                            {member.capacityPercent >= 90 && (
+                            {totalCount >= 5 && (
                               <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
                                 <Shield className="h-2.5 w-2.5 text-white" />
                               </div>
@@ -286,96 +330,74 @@ export default function CommitmentBoardPage() {
                             <p className="text-sm font-medium text-slate-900">
                               {member.name}
                             </p>
-                            <p
-                              className={cn(
-                                "text-xs",
-                                member.capacityPercent >= 90
-                                  ? "text-red-500"
-                                  : member.capacityPercent >= 70
-                                  ? "text-amber-500"
-                                  : "text-slate-500"
-                              )}
-                            >
-                              {member.capacityPercent}% capacity
+                            <p className="text-xs text-slate-500">
+                              {doneCount}/{totalCount} done
                             </p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Day Cells */}
-                      {weekDays.map((day, dayIndex) => {
-                        const commitments = getCommitmentsForCell(
-                          member.id,
-                          dayIndex
-                        )
-                        const isToday = dayIndex === new Date().getDay() - 1
-
-                        return (
-                          <td
-                            key={day}
-                            className={cn(
-                              "px-2 py-2 align-top min-h-[100px]",
-                              isToday && "bg-blue-50/50 border-x border-blue-100"
-                            )}
-                          >
-                            <div className="space-y-2">
-                              {commitments.map((commitment) => (
-                                <div
-                                  key={commitment.id}
-                                  className={cn(
-                                    "p-2 rounded-lg border text-xs transition-colors cursor-pointer hover:shadow-sm",
-                                    commitment.status === "done"
-                                      ? "bg-emerald-50 border-emerald-200"
-                                      : commitment.status === "blocked"
-                                      ? "bg-red-50 border-red-200"
-                                      : commitment.status === "slipped"
-                                      ? "bg-amber-50 border-amber-200"
-                                      : "bg-white border-slate-200 hover:border-slate-300"
-                                  )}
-                                >
-                                  <div className="flex items-start justify-between gap-1">
-                                    <div className="flex items-center gap-1.5">
-                                      {getStatusIcon(commitment.status)}
-                                      <span
-                                        className={cn(
-                                          "font-medium",
-                                          commitment.status === "done"
-                                            ? "text-emerald-700 line-through"
-                                            : "text-slate-700"
-                                        )}
-                                      >
-                                        {commitment.title}
-                                      </span>
-                                    </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-5 w-5 -mr-1"
-                                    >
-                                      <MoreHorizontal className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                  <p className="text-slate-500 mt-1 truncate">
-                                    {commitment.project}
-                                  </p>
-                                </div>
-                              ))}
-
-                              {/* Empty cell - add commitment button */}
-                              {commitments.length === 0 && (
-                                <button className="w-full p-3 rounded-lg border border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors">
-                                  <Plus className="h-4 w-4 mx-auto" />
-                                </button>
+                      {/* Commitments Cell */}
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex flex-wrap gap-2">
+                          {memberCommitments.map((commitment) => (
+                            <div
+                              key={commitment.id}
+                              className={cn(
+                                "p-3 rounded-lg border text-xs transition-colors cursor-pointer hover:shadow-sm min-w-[200px] max-w-[280px]",
+                                commitment.status === "done"
+                                  ? "bg-emerald-50 border-emerald-200"
+                                  : commitment.status === "blocked"
+                                  ? "bg-red-50 border-red-200"
+                                  : commitment.status === "slipped"
+                                  ? "bg-amber-50 border-amber-200"
+                                  : "bg-white border-slate-200 hover:border-slate-300"
                               )}
+                            >
+                              <div className="flex items-start justify-between gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  {getStatusIcon(commitment.status)}
+                                  <span
+                                    className={cn(
+                                      "font-medium",
+                                      commitment.status === "done"
+                                        ? "text-emerald-700 line-through"
+                                        : "text-slate-700"
+                                    )}
+                                  >
+                                    {commitment.title}
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 -mr-1"
+                                >
+                                  <MoreHorizontal className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <p className="text-slate-500 mt-1 truncate">
+                                {commitment.project}
+                              </p>
+                              <p className="text-slate-400 mt-0.5 truncate text-[10px]">
+                                → {commitment.buildSignal}
+                              </p>
                             </div>
-                          </td>
-                        )
-                      })}
+                          ))}
+
+                          {/* Add commitment button */}
+                          <button className="p-3 rounded-lg border border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors min-w-[100px] flex items-center justify-center gap-1">
+                            <Plus className="h-4 w-4" />
+                            <span className="text-xs">Add</span>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
+            )}
           </CardContent>
         </Card>
 

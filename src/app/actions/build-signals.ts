@@ -144,7 +144,7 @@ export async function createBuildSignal(data: {
     throw new Error('Failed to create build signal')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return signal
 }
@@ -181,7 +181,7 @@ export async function updateBuildSignal(
     throw new Error('Failed to update build signal')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return updated
 }
@@ -228,7 +228,7 @@ export async function updateBuildSignalProgress(
     throw new Error('Failed to update build signal progress')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return updated
 }
@@ -277,7 +277,7 @@ export async function deleteBuildSignal(signalId: string): Promise<void> {
     throw new Error('Failed to delete build signal')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
 }
 

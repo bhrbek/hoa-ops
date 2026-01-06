@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Mountain, Waves, TrendingUp, LayoutDashboard, Settings, ClipboardList, BarChart3 } from "lucide-react"
+import { Waves, TrendingUp, LayoutDashboard, Settings, ClipboardList, BarChart3, Mountain } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -24,9 +24,9 @@ const navItems = [
     description: "Engagements",
   },
   {
-    title: "The Climb",
-    href: "/climb",
-    icon: TrendingUp,
+    title: "Rocks",
+    href: "/rocks",
+    icon: Mountain,
     description: "Strategy",
   },
   {
@@ -67,11 +67,15 @@ export function Sidebar({
     <aside className="flex h-screen w-[280px] flex-col bg-slate-50 border-r border-slate-200">
       {/* Header / Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-200">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-white shadow-lg">
-          <Mountain className="h-5 w-5" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-lg">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2L8 8h8l-4-6z" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4 14c0-2 2-4 4-4h8c2 0 4 2 4 4v0c0 3-2 6-8 8-6-2-8-5-8-8z" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 10v6" strokeLinecap="round" opacity="0.5"/>
+          </svg>
         </div>
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">THE JAR</h1>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">Headwaters</h1>
           <p className="text-xs text-slate-500">Strategic OS</p>
         </div>
       </div>

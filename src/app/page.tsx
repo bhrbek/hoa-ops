@@ -190,7 +190,7 @@ export default function VistaPage() {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Active Rocks</h2>
-              <Link href="/climb">
+              <Link href="/rocks">
               <Button variant="ghost" size="sm" className="text-blue-600 gap-1">
                 View All <ChevronRight className="h-4 w-4" />
               </Button>

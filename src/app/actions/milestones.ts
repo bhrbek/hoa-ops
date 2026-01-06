@@ -99,7 +99,7 @@ export async function createMilestone(data: {
     throw new Error('Failed to create milestone')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   return milestone
 }
 
@@ -145,7 +145,7 @@ export async function updateMilestone(
     throw new Error('Failed to update milestone')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   return updated
 }
 
@@ -186,7 +186,7 @@ export async function deleteMilestone(milestoneId: string): Promise<void> {
     throw new Error('Failed to delete milestone')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
 }
 
 /**

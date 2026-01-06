@@ -10,37 +10,33 @@ import {
   Download,
   Calendar,
   ChevronDown,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTeam } from "@/contexts/team-context"
+import { getActiveEngagementStats, getOEMBuyingPatterns, getActiveEngagements } from "@/app/actions/engagements"
 
-// Mock data for reports
-const revenueByAsset = [
-  { asset: "Enterprise Cloud Demo", type: "demo", revenue: 245000, engagements: 12 },
-  { asset: "Security Architecture Deck", type: "deck", revenue: 189000, engagements: 8 },
-  { asset: "Wi-Fi 7 POC Kit", type: "demo", revenue: 156000, engagements: 5 },
-  { asset: "SD-WAN Whitepaper", type: "whitepaper", revenue: 98000, engagements: 15 },
-  { asset: "Network Assessment Tool", type: "tool", revenue: 87000, engagements: 22 },
-]
+interface EngagementStats {
+  totalRevenue: number
+  totalGP: number
+  engagementCount: number
+  workshopCount: number
+}
 
-const oemPairs = [
-  { oem1: "Cisco", oem2: "Palo Alto", count: 45, avgRevenue: 125000 },
-  { oem1: "AWS", oem2: "HashiCorp", count: 38, avgRevenue: 98000 },
-  { oem1: "Azure", oem2: "Fortinet", count: 32, avgRevenue: 112000 },
-  { oem1: "Arista", oem2: "Cisco", count: 28, avgRevenue: 156000 },
-  { oem1: "Juniper", oem2: "Palo Alto", count: 24, avgRevenue: 89000 },
-]
+interface OEMPair {
+  oem1_name: string
+  oem2_name: string
+  pair_count: number
+}
 
-const domainTrends = [
-  { domain: "Cloud", engagements: 156, revenue: 1250000, growth: "+15%" },
-  { domain: "Security", engagements: 124, revenue: 980000, growth: "+22%" },
-  { domain: "Network", engagements: 98, revenue: 756000, growth: "+8%" },
-  { domain: "Collaboration", engagements: 67, revenue: 425000, growth: "-3%" },
-  { domain: "Data Center", engagements: 45, revenue: 312000, growth: "+5%" },
-]
+interface DomainTrend {
+  domain: string
+  engagements: number
+  revenue: number
+}
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -68,6 +64,70 @@ function getAssetTypeColor(type: string): string {
 
 export default function ReportsPage() {
   const { activeTeam, isLoading } = useTeam()
+  const [stats, setStats] = React.useState<EngagementStats | null>(null)
+  const [oemPairs, setOemPairs] = React.useState<OEMPair[]>([])
+  const [domainTrends, setDomainTrends] = React.useState<DomainTrend[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(true)
+
+  // Fetch report data when team changes
+  React.useEffect(() => {
+    async function fetchData() {
+      if (!activeTeam) {
+        setStats(null)
+        setOemPairs([])
+        setDomainTrends([])
+        setIsLoadingData(false)
+        return
+      }
+
+      setIsLoadingData(true)
+      try {
+        // Fetch all report data in parallel
+        const [statsData, oemData, engagementsData] = await Promise.all([
+          getActiveEngagementStats(),
+          getOEMBuyingPatterns(10),
+          getActiveEngagements({ limit: 500 })
+        ])
+
+        setStats(statsData)
+        setOemPairs(oemData)
+
+        // Aggregate domain trends from engagements
+        const domainMap = new Map<string, { engagements: number; revenue: number }>()
+        engagementsData.forEach(e => {
+          e.domains?.forEach(d => {
+            const existing = domainMap.get(d.name) || { engagements: 0, revenue: 0 }
+            domainMap.set(d.name, {
+              engagements: existing.engagements + 1,
+              revenue: existing.revenue + e.revenue_impact
+            })
+          })
+        })
+
+        const trends = Array.from(domainMap.entries())
+          .map(([domain, data]) => ({
+            domain,
+            engagements: data.engagements,
+            revenue: data.revenue
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10)
+
+        setDomainTrends(trends)
+      } catch (error) {
+        console.error('Failed to fetch report data:', error)
+        setStats(null)
+        setOemPairs([])
+        setDomainTrends([])
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchData()
+  }, [activeTeam?.id])
+
+  const isPageLoading = isLoading || isLoadingData
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -125,37 +185,22 @@ export default function ReportsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {revenueByAsset.map((item, index) => (
-                    <div
-                      key={item.asset}
-                      className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-slate-900 truncate">
-                            {item.asset}
-                          </span>
-                          <Badge className={getAssetTypeColor(item.type)}>
-                            {item.type}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-slate-500">
-                          {item.engagements} engagements
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-emerald-600">
-                          {formatCurrency(item.revenue)}
-                        </p>
-                        <p className="text-xs text-slate-500">influenced revenue</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {isPageLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    <span className="ml-2 text-slate-500">Loading...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <FileText className="h-12 w-12 text-slate-300 mb-3" />
+                    <p className="text-sm text-slate-500">
+                      Asset-based revenue tracking coming soon
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Link assets to engagements to see revenue attribution
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -170,10 +215,26 @@ export default function ReportsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {isPageLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    <span className="ml-2 text-slate-500">Loading...</span>
+                  </div>
+                ) : oemPairs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Users className="h-12 w-12 text-slate-300 mb-3" />
+                    <p className="text-sm text-slate-500">
+                      No OEM pairing data yet
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Log engagements with multiple OEMs to see patterns
+                    </p>
+                  </div>
+                ) : (
                 <div className="space-y-4">
                   {oemPairs.map((pair, index) => (
                     <div
-                      key={`${pair.oem1}-${pair.oem2}`}
+                      key={`${pair.oem1_name}-${pair.oem2_name}`}
                       className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 font-bold">
@@ -181,23 +242,18 @@ export default function ReportsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <Badge variant="default">{pair.oem1}</Badge>
+                          <Badge variant="default">{pair.oem1_name}</Badge>
                           <span className="text-slate-400">+</span>
-                          <Badge variant="default">{pair.oem2}</Badge>
+                          <Badge variant="default">{pair.oem2_name}</Badge>
                         </div>
                         <p className="text-sm text-slate-500 mt-1">
-                          {pair.count} joint appearances
+                          {pair.pair_count} joint appearances
                         </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-slate-700">
-                          {formatCurrency(pair.avgRevenue)}
-                        </p>
-                        <p className="text-xs text-slate-500">avg. deal size</p>
                       </div>
                     </div>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -212,6 +268,22 @@ export default function ReportsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {isPageLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    <span className="ml-2 text-slate-500">Loading...</span>
+                  </div>
+                ) : domainTrends.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <TrendingUp className="h-12 w-12 text-slate-300 mb-3" />
+                    <p className="text-sm text-slate-500">
+                      No domain data yet
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Log engagements with domains to see trends
+                    </p>
+                  </div>
+                ) : (
                 <div className="space-y-4">
                   {domainTrends.map((domain) => (
                     <div
@@ -219,20 +291,11 @@ export default function ReportsPage() {
                       className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-slate-900">
-                            {domain.domain}
-                          </span>
-                          <Badge
-                            variant={
-                              domain.growth.startsWith("+") ? "success" : "destructive"
-                            }
-                          >
-                            {domain.growth}
-                          </Badge>
-                        </div>
+                        <span className="font-medium text-slate-900">
+                          {domain.domain}
+                        </span>
                         <p className="text-sm text-slate-500">
-                          {domain.engagements} engagements this quarter
+                          {domain.engagements} engagements
                         </p>
                       </div>
                       <div className="text-right">
@@ -244,6 +307,7 @@ export default function ReportsPage() {
                     </div>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

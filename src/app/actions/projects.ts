@@ -192,7 +192,7 @@ export async function createProject(data: {
     throw new Error('Failed to create project')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return project
 }
@@ -239,7 +239,7 @@ export async function updateProject(
     throw new Error('Failed to update project')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
   return updated
 }
@@ -287,7 +287,7 @@ export async function deleteProject(projectId: string): Promise<void> {
     throw new Error('Failed to delete project')
   }
 
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   revalidatePath('/')
 }
 

@@ -195,7 +195,7 @@ export async function createEngagement(data: {
 
   revalidatePath('/stream')
   revalidatePath('/')
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   return engagement
 }
 
@@ -282,7 +282,7 @@ export async function updateEngagement(
 
   revalidatePath('/stream')
   revalidatePath('/')
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
   return updated
 }
 
@@ -318,7 +318,7 @@ export async function deleteEngagement(engagementId: string): Promise<void> {
 
   revalidatePath('/stream')
   revalidatePath('/')
-  revalidatePath('/climb')
+  revalidatePath('/rocks')
 }
 
 /**

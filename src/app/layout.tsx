@@ -9,8 +9,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "The Jar | Strategic Operating System",
-  description: "Internal Strategic Operating System for Technical Solutions Architects",
+  title: "Headwaters | Strategic Operating System",
+  description: "Where strategy meets execution. The source of team clarity.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 }
 
 export default function RootLayout({

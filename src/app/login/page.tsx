@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Mountain, Mail, Lock, Loader2 } from 'lucide-react'
+import { Mail, Lock, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,13 +78,17 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-14 w-14 rounded-xl bg-slate-800 flex items-center justify-center text-white shadow-lg">
-              <Mountain className="h-7 w-7" />
+            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg">
+              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L8 8h8l-4-6z" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4 14c0-2 2-4 4-4h8c2 0 4 2 4 4v0c0 3-2 6-8 8-6-2-8-5-8-8z" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 10v6" strokeLinecap="round" opacity="0.5"/>
+              </svg>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to The Jar</CardTitle>
+          <CardTitle className="text-2xl font-bold">Welcome to Headwaters</CardTitle>
           <CardDescription>
-            Strategic Operating System for Technical Solutions Architects
+            Where strategy meets execution. The source of team clarity.
           </CardDescription>
         </CardHeader>
         <CardContent>
