@@ -94,7 +94,7 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     teamsCount: teams?.length || 0,
     teams: teams?.map((t: any) => ({ id: t.id, name: t.name })),
     orgsAdminCount: orgsAdmin?.length || 0,
-    rawTeamMemberships: teamMemberships?.length || 0
+    rawMemberships: memberships?.length || 0
   })
 
   return {
