@@ -651,3 +651,69 @@ Two parallel implementation tracks for better UX and database performance.
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 9: UI Polish & Performance | ✅ Complete | All A and B tracks implemented |
+| Phase 10: Auth & Middleware | ✅ Complete | Fixed middleware redirect, profile trigger, RLS |
+
+---
+
+## Phase 10: Auth & Middleware (2026-01-06)
+
+Fixed critical authentication and authorization issues preventing user login and access.
+
+### Issues Fixed
+
+| Issue | Description | Fix |
+|-------|-------------|-----|
+| Middleware not redirecting | Next.js 16 Turbopack wasn't executing middleware | Simplified middleware, removed separate file import |
+| Profile trigger not firing | New signups didn't get profiles | Applied migration 012 with trigger fix |
+| RLS missing on junction tables | Supabase linter errors | Applied migration 010 with RLS policies |
+| Function search_path warnings | Security warnings on functions | Applied migration 011 with search_path fixes |
+| User without profile | robert.hrbek@wwt.com had auth but no profile | Manually created profile + org_admin + team_membership |
+
+### Migrations Applied
+
+| Migration | Description |
+|-----------|-------------|
+| `010_enable_rls_junction_tables.sql` | RLS policies for domain_oems, engagement_tags, themes, engagement_assets, project_assets |
+| `011_fix_function_search_paths.sql` | Set search_path on all public functions |
+| `012_fix_profile_trigger.sql` | Auto-create profile on auth.users insert |
+| `013_fix_enablement_event_assets_rls.sql` | RLS for enablement_event_assets junction table |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `middleware.ts` | Simplified auth middleware with inline Supabase client |
+| `src/components/shell/sidebar.tsx` | Added Settings nav item (org admin only) |
+
+### Scripts Added
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/setup-admin.sh` | Bootstrap a user as org admin after signup |
+
+### Key Learnings
+
+1. **Next.js 16 Turbopack**: Middleware must be simple and self-contained. Complex imports from other files may not work.
+2. **Profile trigger**: Must use `ON CONFLICT DO NOTHING` to handle edge cases.
+3. **Supabase RLS**: All public tables need RLS enabled, even junction tables.
+4. **Function security**: All functions should have `search_path = ''` set.
+
+---
+
+## Summary
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 0: Documentation | ✅ Complete | |
+| Phase 1: Database Migrations | ✅ Complete | |
+| Phase 2: TypeScript Types | ✅ Complete | |
+| Phase 3: Server Actions | ✅ Complete | |
+| Phase 4: UI Components | ✅ Complete | |
+| Phase 5: Testing | ✅ Complete | |
+| Phase 6: Security Fixes | ✅ Complete | |
+| Phase 7: UI Data Wiring | ✅ Complete | |
+| Phase 8: Security Hardening | ✅ Complete | |
+| Phase 9: UI Polish & Performance | ✅ Complete | |
+| Phase 10: Auth & Middleware | ✅ Complete | |
+
+**All phases complete! Application is fully functional.**

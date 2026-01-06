@@ -322,3 +322,53 @@ import { createDomain, updateDomain, deleteDomain } from '@/app/actions/referenc
 // OEMs
 import { createOEM, updateOEM, deleteOEM } from '@/app/actions/reference'
 ```
+
+### User Setup (First-Time)
+
+New users must be added to a team before they can access the app:
+
+1. User signs up at `/login` (creates auth user + profile via trigger)
+2. Admin runs setup script to add them to org/team:
+
+```bash
+./scripts/setup-admin.sh user@email.com
+```
+
+This script:
+- Looks up the user's profile
+- Adds them as org admin (Headwaters org)
+- Adds them as team manager (Campus Team)
+
+### Authentication Flow
+
+1. **Middleware** (`middleware.ts`) checks auth on every request
+2. Unauthenticated users → redirect to `/login`
+3. Authenticated users without team membership → stuck (must run setup script)
+4. Authenticated users with team → full app access
+
+**Important**: The middleware is self-contained (no imports from `@/lib/supabase/middleware`). This is required for Next.js 16 Turbopack compatibility.
+
+### Database Migrations
+
+Current migration files (in order):
+
+| Migration | Purpose |
+|-----------|---------|
+| 001_create_tables.sql | Base tables + profile trigger |
+| 002_rls_policies.sql | Initial RLS policies |
+| 003_seed_data.sql | Reference data |
+| 004_create_helper_functions.sql | RLS helper functions |
+| 005_create_build_signals.sql | Build signals table |
+| 006_fix_commitments_table.sql | Commitment model redesign |
+| 007_create_rls_policies.sql | Team-scoped RLS policies |
+| 008_deprecate_swarms.sql | Deprecate swarms → enablement_events |
+| 009_fix_rls_policies.sql | Fix commitment policies |
+| 010_enable_rls_junction_tables.sql | RLS for junction tables |
+| 011_fix_function_search_paths.sql | Security: search_path on functions |
+| 012_fix_profile_trigger.sql | Profile auto-creation trigger |
+| 013_fix_enablement_event_assets_rls.sql | RLS for enablement_event_assets |
+
+**To push new migrations:**
+```bash
+supabase db push
+```
