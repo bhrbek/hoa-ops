@@ -51,7 +51,7 @@ export function Sidebar({
   capacityPercent = 80
 }: SidebarProps) {
   const pathname = usePathname()
-  const { user, isLoading } = useTeam()
+  const { user, isLoading, isOrgAdmin } = useTeam()
 
   // Get initials from user's full name
   const userInitials = React.useMemo(() => {
@@ -116,6 +116,33 @@ export function Sidebar({
             </Link>
           )
         })}
+
+        {/* Admin Settings - only visible to org admins */}
+        {isOrgAdmin && (
+          <Link
+            href="/settings/admin"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+              pathname === "/settings/admin"
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
+            )}
+          >
+            <Settings className={cn(
+              "h-5 w-5",
+              pathname === "/settings/admin" ? "text-blue-600" : "text-slate-400"
+            )} />
+            <div className="flex flex-col">
+              <span>Settings</span>
+              <span className={cn(
+                "text-xs",
+                pathname === "/settings/admin" ? "text-slate-500" : "text-slate-400"
+              )}>
+                Admin
+              </span>
+            </div>
+          </Link>
+        )}
       </nav>
 
       {/* Capacity Section */}
@@ -192,12 +219,15 @@ export function Sidebar({
               <p className="text-sm font-medium text-slate-900 truncate">{user.full_name}</p>
               <p className="text-xs text-slate-500 truncate">{user.email}</p>
             </div>
-            <Link
-              href="/settings"
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
+            {isOrgAdmin && (
+              <Link
+                href="/settings/admin"
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Admin Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         ) : (
           <div className="text-sm text-slate-500 text-center">Not signed in</div>
