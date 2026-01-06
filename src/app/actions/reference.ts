@@ -205,3 +205,145 @@ export async function getQuarters(): Promise<string[]> {
   const uniqueQuarters = [...new Set(quarters)]
   return uniqueQuarters.sort().reverse()
 }
+
+// ============================================
+// ADMIN: Domain Management
+// ============================================
+
+/**
+ * Create a new domain (org admin only)
+ */
+export async function createDomain(data: {
+  name: string
+  color?: string
+}): Promise<Domain> {
+  const supabase = await createClient()
+
+  const { data: domain, error } = await (supabase as any)
+    .from('domains')
+    .insert({
+      name: data.name,
+      color: data.color || 'default',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating domain:', error)
+    throw new Error('Failed to create domain')
+  }
+
+  return domain
+}
+
+/**
+ * Update a domain
+ */
+export async function updateDomain(
+  domainId: string,
+  data: { name?: string; color?: string }
+): Promise<Domain> {
+  const supabase = await createClient()
+
+  const { data: domain, error } = await (supabase as any)
+    .from('domains')
+    .update(data)
+    .eq('id', domainId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating domain:', error)
+    throw new Error('Failed to update domain')
+  }
+
+  return domain
+}
+
+/**
+ * Delete a domain
+ */
+export async function deleteDomain(domainId: string): Promise<void> {
+  const supabase = await createClient()
+
+  const { error } = await (supabase as any)
+    .from('domains')
+    .delete()
+    .eq('id', domainId)
+
+  if (error) {
+    console.error('Error deleting domain:', error)
+    throw new Error('Failed to delete domain')
+  }
+}
+
+// ============================================
+// ADMIN: OEM Management
+// ============================================
+
+/**
+ * Create a new OEM (org admin only)
+ */
+export async function createOEM(data: {
+  name: string
+  logo_url?: string
+}): Promise<OEM> {
+  const supabase = await createClient()
+
+  const { data: oem, error } = await (supabase as any)
+    .from('oems')
+    .insert({
+      name: data.name,
+      logo_url: data.logo_url || null,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating OEM:', error)
+    throw new Error('Failed to create OEM')
+  }
+
+  return oem
+}
+
+/**
+ * Update an OEM
+ */
+export async function updateOEM(
+  oemId: string,
+  data: { name?: string; logo_url?: string }
+): Promise<OEM> {
+  const supabase = await createClient()
+
+  const { data: oem, error } = await (supabase as any)
+    .from('oems')
+    .update(data)
+    .eq('id', oemId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating OEM:', error)
+    throw new Error('Failed to update OEM')
+  }
+
+  return oem
+}
+
+/**
+ * Delete an OEM
+ */
+export async function deleteOEM(oemId: string): Promise<void> {
+  const supabase = await createClient()
+
+  const { error } = await (supabase as any)
+    .from('oems')
+    .delete()
+    .eq('id', oemId)
+
+  if (error) {
+    console.error('Error deleting OEM:', error)
+    throw new Error('Failed to delete OEM')
+  }
+}
