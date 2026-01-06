@@ -24,9 +24,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
 import { useTeam } from "@/contexts/team-context"
-import { getActiveRocks } from "@/app/actions/rocks"
+import { getActiveRocks, createRock } from "@/app/actions/rocks"
+import { createProject } from "@/app/actions/projects"
 import { getActiveEngagements } from "@/app/actions/engagements"
-import type { RockWithProjects, EngagementWithRelations } from "@/types/supabase"
+import { CreateRockDialog } from "@/components/climb/create-rock-dialog"
+import { CreateProjectDialog } from "@/components/climb/create-project-dialog"
+import type { RockWithProjects, EngagementWithRelations, Rock } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -192,43 +195,85 @@ function getGanttPosition(startDate: string, endDate: string) {
 export default function RocksPage() {
   const [expandedRocks, setExpandedRocks] = React.useState<string[]>([])
   const [rocks, setRocks] = React.useState<UIRock[]>([])
+  const [rawRocks, setRawRocks] = React.useState<RockWithProjects[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = React.useState(false)
+  const [selectedRockId, setSelectedRockId] = React.useState<string | undefined>()
   const { activeTeam, isLoading } = useTeam()
+
+  // Function to fetch/refresh data
+  const fetchData = React.useCallback(async () => {
+    if (!activeTeam) {
+      setRocks([])
+      setRawRocks([])
+      setIsLoadingData(false)
+      return
+    }
+
+    setIsLoadingData(true)
+    try {
+      // Fetch rocks and engagements in parallel
+      const [rocksData, engagementsData] = await Promise.all([
+        getActiveRocks(),
+        getActiveEngagements({ limit: 500 })
+      ])
+
+      setRawRocks(rocksData)
+      const transformedRocks = rocksData.map(rock => transformRock(rock, engagementsData))
+      setRocks(transformedRocks)
+
+      // Auto-expand first rock if available
+      if (transformedRocks.length > 0 && expandedRocks.length === 0) {
+        setExpandedRocks([transformedRocks[0].id])
+      }
+    } catch (error) {
+      console.error('Failed to fetch rocks:', error)
+      setRocks([])
+      setRawRocks([])
+    } finally {
+      setIsLoadingData(false)
+    }
+  }, [activeTeam?.id])
 
   // Fetch rocks and engagements when team changes
   React.useEffect(() => {
-    async function fetchData() {
-      if (!activeTeam) {
-        setRocks([])
-        setIsLoadingData(false)
-        return
-      }
-
-      setIsLoadingData(true)
-      try {
-        // Fetch rocks and engagements in parallel
-        const [rocksData, engagementsData] = await Promise.all([
-          getActiveRocks(),
-          getActiveEngagements({ limit: 500 })
-        ])
-
-        const transformedRocks = rocksData.map(rock => transformRock(rock, engagementsData))
-        setRocks(transformedRocks)
-
-        // Auto-expand first rock if available
-        if (transformedRocks.length > 0 && expandedRocks.length === 0) {
-          setExpandedRocks([transformedRocks[0].id])
-        }
-      } catch (error) {
-        console.error('Failed to fetch rocks:', error)
-        setRocks([])
-      } finally {
-        setIsLoadingData(false)
-      }
-    }
-
     fetchData()
-  }, [activeTeam?.id])
+  }, [fetchData])
+
+  // Handle creating a new rock
+  const handleCreateRock = async (data: {
+    team_id: string
+    title: string
+    owner_id: string
+    quarter: string
+    perfect_outcome: string
+    worst_outcome?: string
+  }) => {
+    await createRock(data)
+    // Refresh the list after creating
+    await fetchData()
+  }
+
+  // Handle creating a new project
+  const handleCreateProject = async (data: {
+    rock_id: string
+    title: string
+    owner_id: string
+    start_date: string
+    end_date: string
+    estimated_hours: number
+  }) => {
+    await createProject(data)
+    // Refresh the list after creating
+    await fetchData()
+  }
+
+  // Open project dialog with a specific rock selected
+  const openProjectDialog = (rockId: string) => {
+    setSelectedRockId(rockId)
+    setIsProjectDialogOpen(true)
+  }
 
   const toggleRock = (rockId: string) => {
     setExpandedRocks((prev) =>
@@ -281,7 +326,7 @@ export default function RocksPage() {
                 </p>
               </div>
             </div>
-            <Button variant="primary" className="gap-2">
+            <Button variant="primary" className="gap-2" onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4" />
               Add Rock
             </Button>
@@ -320,7 +365,7 @@ export default function RocksPage() {
             <p className="text-sm text-slate-500 max-w-md mb-4">
               Rocks represent your quarterly strategic priorities. Create your first Rock to start tracking capability creation.
             </p>
-            <Button variant="primary" className="gap-2">
+            <Button variant="primary" className="gap-2" onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4" />
               Create Your First Rock
             </Button>
@@ -448,7 +493,12 @@ export default function RocksPage() {
                           <Folder className="h-4 w-4" />
                           Supporting Projects
                         </h4>
-                        <Button variant="ghost" size="sm" className="text-blue-600 gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 gap-1"
+                          onClick={() => openProjectDialog(rock.id)}
+                        >
                           <Plus className="h-4 w-4" />
                           Add Project
                         </Button>
@@ -581,7 +631,10 @@ export default function RocksPage() {
         )}
 
         {/* Add New Rock */}
-        <div className="mt-6 border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer group">
+        <div
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="mt-6 border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer group"
+        >
           <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors mb-3">
             <Plus className="h-6 w-6" />
           </div>
@@ -591,6 +644,22 @@ export default function RocksPage() {
           </p>
         </div>
       </div>
+
+      {/* Create Rock Dialog */}
+      <CreateRockDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSave={handleCreateRock}
+      />
+
+      {/* Create Project Dialog */}
+      <CreateProjectDialog
+        open={isProjectDialogOpen}
+        onOpenChange={setIsProjectDialogOpen}
+        defaultRockId={selectedRockId}
+        rocks={rawRocks as Rock[]}
+        onSave={handleCreateProject}
+      />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AppShell } from "@/components/shell/app-shell"
+import { VersionBadge } from "@/components/shell/version-badge"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
         <AppShell>
           {children}
         </AppShell>
+        <VersionBadge />
       </body>
     </html>
   )

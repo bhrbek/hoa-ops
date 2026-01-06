@@ -296,3 +296,10 @@ import { getAssets } from '@/app/actions/assets'
 - NEVER add "Generated with Claude Code" or similar attribution to commits
 - NEVER add "Co-Authored-By: Claude" or any AI co-author attribution
 - Commit messages should describe the changes, not who/what made them
+
+### Versioning
+- Version format: `YYYYMMDD-vN` (e.g., `20260106-v5`)
+- Version is stored in `/VERSION` file at project root
+- **Update VERSION file before each commit/push**
+- Version is displayed in bottom-right corner of the app (click to copy)
+- `next.config.ts` reads VERSION and injects as `NEXT_PUBLIC_APP_VERSION`

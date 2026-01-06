@@ -19,7 +19,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useTeam } from "@/contexts/team-context"
 import { cn } from "@/lib/utils"
-import { getActiveCommitments } from "@/app/actions/commitments"
+import { getActiveCommitments, createCommitment } from "@/app/actions/commitments"
+import { CreateCommitmentDialog } from "@/components/commitment/create-commitment-dialog"
 import type { CommitmentStatus, CommitmentWithRelations } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
@@ -131,58 +132,73 @@ export default function CommitmentBoardPage() {
   const [commitments, setCommitments] = React.useState<UICommitment[]>([])
   const [teamMembers, setTeamMembers] = React.useState<UITeamMember[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
+
+  const fetchData = React.useCallback(async () => {
+    if (!activeTeam) {
+      setCommitments([])
+      setTeamMembers([])
+      setIsLoadingData(false)
+      return
+    }
+
+    setIsLoadingData(true)
+    try {
+      const weekOf = getWeekOf(currentWeek)
+      const data = await getActiveCommitments(weekOf)
+      const transformed = data.map(transformCommitment)
+      setCommitments(transformed)
+
+      // Build team members from commitment owners
+      const memberMap = new Map<string, UITeamMember>()
+      data.forEach(c => {
+        if (c.owner && !memberMap.has(c.owner.id)) {
+          memberMap.set(c.owner.id, {
+            id: c.owner.id,
+            name: c.owner.full_name,
+            initials: getInitials(c.owner.full_name),
+            color: getAvatarColor(c.owner.id),
+            commitmentCount: 0,
+          })
+        }
+      })
+
+      // Count commitments per member
+      transformed.forEach(c => {
+        const member = memberMap.get(c.ownerId)
+        if (member) {
+          member.commitmentCount++
+        }
+      })
+
+      setTeamMembers(Array.from(memberMap.values()))
+    } catch (error) {
+      console.error('Failed to fetch commitments:', error)
+      setCommitments([])
+      setTeamMembers([])
+    } finally {
+      setIsLoadingData(false)
+    }
+  }, [activeTeam?.id, currentWeek])
 
   // Fetch commitments when team or week changes
   React.useEffect(() => {
-    async function fetchData() {
-      if (!activeTeam) {
-        setCommitments([])
-        setTeamMembers([])
-        setIsLoadingData(false)
-        return
-      }
-
-      setIsLoadingData(true)
-      try {
-        const weekOf = getWeekOf(currentWeek)
-        const data = await getActiveCommitments(weekOf)
-        const transformed = data.map(transformCommitment)
-        setCommitments(transformed)
-
-        // Build team members from commitment owners
-        const memberMap = new Map<string, UITeamMember>()
-        data.forEach(c => {
-          if (c.owner && !memberMap.has(c.owner.id)) {
-            memberMap.set(c.owner.id, {
-              id: c.owner.id,
-              name: c.owner.full_name,
-              initials: getInitials(c.owner.full_name),
-              color: getAvatarColor(c.owner.id),
-              commitmentCount: 0,
-            })
-          }
-        })
-
-        // Count commitments per member
-        transformed.forEach(c => {
-          const member = memberMap.get(c.ownerId)
-          if (member) {
-            member.commitmentCount++
-          }
-        })
-
-        setTeamMembers(Array.from(memberMap.values()))
-      } catch (error) {
-        console.error('Failed to fetch commitments:', error)
-        setCommitments([])
-        setTeamMembers([])
-      } finally {
-        setIsLoadingData(false)
-      }
-    }
-
     fetchData()
-  }, [activeTeam?.id, currentWeek])
+  }, [fetchData])
+
+  const handleCreateCommitment = async (data: {
+    project_id: string
+    build_signal_id: string
+    definition_of_done: string
+    week_of?: string
+    notes?: string
+  }) => {
+    await createCommitment({
+      ...data,
+      week_of: data.week_of || getWeekOf(currentWeek),
+    })
+    await fetchData()
+  }
 
   const goToPreviousWeek = () => {
     const newDate = new Date(currentWeek)
@@ -254,7 +270,12 @@ export default function CommitmentBoardPage() {
               <Flame className="h-4 w-4 text-amber-500" />
               Light Beacon
             </Button>
-            <Button variant="primary" size="sm" className="gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              className="gap-2"
+              onClick={() => setIsCreateDialogOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               New Commitment
             </Button>
@@ -278,7 +299,11 @@ export default function CommitmentBoardPage() {
                 <p className="text-sm text-slate-500 max-w-md mb-4">
                   Create commitments to track your weekly execution against Projects and Build Signals.
                 </p>
-                <Button variant="primary" className="gap-2">
+                <Button
+                  variant="primary"
+                  className="gap-2"
+                  onClick={() => setIsCreateDialogOpen(true)}
+                >
                   <Plus className="h-4 w-4" />
                   Create Commitment
                 </Button>
@@ -386,7 +411,10 @@ export default function CommitmentBoardPage() {
                           ))}
 
                           {/* Add commitment button */}
-                          <button className="p-3 rounded-lg border border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors min-w-[100px] flex items-center justify-center gap-1">
+                          <button
+                            className="p-3 rounded-lg border border-dashed border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-colors min-w-[100px] flex items-center justify-center gap-1"
+                            onClick={() => setIsCreateDialogOpen(true)}
+                          >
                             <Plus className="h-4 w-4" />
                             <span className="text-xs">Add</span>
                           </button>
@@ -435,6 +463,14 @@ export default function CommitmentBoardPage() {
           </p>
         </div>
       </div>
+
+      {/* Create Commitment Dialog */}
+      <CreateCommitmentDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSave={handleCreateCommitment}
+        weekOf={getWeekOf(currentWeek)}
+      />
     </div>
   )
 }

@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
 import { useTeam } from "@/contexts/team-context"
-import { getActiveEngagements } from "@/app/actions/engagements"
+import { getActiveEngagements, createEngagement } from "@/app/actions/engagements"
 import type { EngagementWithRelations } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
@@ -110,29 +110,59 @@ export default function StreamPage() {
   const [isLoadingData, setIsLoadingData] = React.useState(true)
   const { activeTeam, isLoading } = useTeam()
 
-  // Fetch engagements when team changes
-  React.useEffect(() => {
-    async function fetchEngagements() {
-      if (!activeTeam) {
-        setEngagements([])
-        setIsLoadingData(false)
-        return
-      }
-
-      setIsLoadingData(true)
-      try {
-        const data = await getActiveEngagements({ limit: 100 })
-        setEngagements(data.map(transformEngagement))
-      } catch (error) {
-        console.error('Failed to fetch engagements:', error)
-        setEngagements([])
-      } finally {
-        setIsLoadingData(false)
-      }
+  const fetchEngagements = React.useCallback(async () => {
+    if (!activeTeam) {
+      setEngagements([])
+      setIsLoadingData(false)
+      return
     }
 
-    fetchEngagements()
+    setIsLoadingData(true)
+    try {
+      const data = await getActiveEngagements({ limit: 100 })
+      setEngagements(data.map(transformEngagement))
+    } catch (error) {
+      console.error('Failed to fetch engagements:', error)
+      setEngagements([])
+    } finally {
+      setIsLoadingData(false)
+    }
   }, [activeTeam?.id])
+
+  // Fetch engagements when team changes
+  React.useEffect(() => {
+    fetchEngagements()
+  }, [fetchEngagements])
+
+  const handleCreateEngagement = async (formData: {
+    customer_name: string
+    date: string
+    activity_type: "Workshop" | "Demo" | "POC" | "Advisory"
+    revenue_impact: number
+    gp_impact: number
+    notes: string
+    rock_id: string | null
+    domain_ids: string[]
+    oem_ids: string[]
+    asset_ids: string[]
+  }) => {
+    if (!activeTeam) return
+
+    await createEngagement({
+      team_id: activeTeam.id,
+      customer_name: formData.customer_name,
+      date: formData.date,
+      activity_type: formData.activity_type,
+      revenue_impact: formData.revenue_impact,
+      gp_impact: formData.gp_impact,
+      notes: formData.notes,
+      rock_id: formData.rock_id || undefined,
+      domain_ids: formData.domain_ids,
+      oem_ids: formData.oem_ids,
+    })
+
+    await fetchEngagements()
+  }
 
   const filteredEngagements = engagements.filter(
     (e) =>
@@ -334,7 +364,11 @@ export default function StreamPage() {
       </div>
 
       {/* Engagement Drawer */}
-      <EngagementDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+      <EngagementDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onSave={handleCreateEngagement}
+      />
     </div>
   )
 }
