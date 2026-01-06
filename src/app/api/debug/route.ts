@@ -10,7 +10,8 @@ import { getActiveEngagements, getActiveEngagementStats } from '@/app/actions/en
 import { getTeamMembers } from '@/app/actions/teams'
 
 export async function GET() {
-  const results: Record<string, unknown> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const results: Record<string, any> = {
     timestamp: new Date().toISOString(),
     env: {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
