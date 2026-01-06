@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Pencil, Trash2, X, Check, Loader2 } from "lucide-react"
+import { Plus, Pencil, Trash2, X, Check, Loader2, ChevronDown, ChevronRight, Users, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,8 +23,19 @@ import {
   createOEM,
   updateOEM,
   deleteOEM,
+  getProfiles,
 } from "@/app/actions/reference"
-import type { Domain, OEM } from "@/types/supabase"
+import {
+  getTeams,
+  createTeam,
+  updateTeam,
+  deleteTeam,
+  getTeamMembers,
+  addTeamMember,
+  updateTeamMemberRole,
+  removeTeamMember,
+} from "@/app/actions/teams"
+import type { Domain, OEM, Team, TeamMembership, Profile, TeamRole } from "@/types/supabase"
 
 const DOMAIN_COLORS = [
   { value: "default", label: "Gray" },
@@ -37,10 +48,12 @@ const DOMAIN_COLORS = [
 ]
 
 export default function AdminSettingsPage() {
-  const { isOrgAdmin, isLoading: isLoadingTeam } = useTeam()
+  const { isOrgAdmin, isLoading: isLoadingTeam, activeOrg } = useTeam()
 
   const [domains, setDomains] = React.useState<Domain[]>([])
   const [oems, setOems] = React.useState<OEM[]>([])
+  const [teams, setTeams] = React.useState<Team[]>([])
+  const [profiles, setProfiles] = React.useState<Profile[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
   // Domain editing state
@@ -57,19 +70,37 @@ export default function AdminSettingsPage() {
   const [newOemName, setNewOemName] = React.useState("")
   const [isAddingOem, setIsAddingOem] = React.useState(false)
 
+  // Team editing state
+  const [editingTeamId, setEditingTeamId] = React.useState<string | null>(null)
+  const [editingTeamName, setEditingTeamName] = React.useState("")
+  const [editingTeamDescription, setEditingTeamDescription] = React.useState("")
+  const [newTeamName, setNewTeamName] = React.useState("")
+  const [newTeamDescription, setNewTeamDescription] = React.useState("")
+  const [isAddingTeam, setIsAddingTeam] = React.useState(false)
+  const [expandedTeamId, setExpandedTeamId] = React.useState<string | null>(null)
+  const [teamMembers, setTeamMembers] = React.useState<Record<string, (TeamMembership & { user: Profile })[]>>({})
+  const [isAddingMember, setIsAddingMember] = React.useState<string | null>(null)
+  const [newMemberUserId, setNewMemberUserId] = React.useState("")
+  const [newMemberRole, setNewMemberRole] = React.useState<TeamRole>("tsa")
+
   const [isSaving, setIsSaving] = React.useState(false)
 
   // Load data
   React.useEffect(() => {
     async function loadData() {
+      if (!activeOrg?.id) return
       setIsLoading(true)
       try {
-        const [domainsData, oemsData] = await Promise.all([
+        const [domainsData, oemsData, teamsData, profilesData] = await Promise.all([
           getDomains(),
           getOEMs(),
+          getTeams(activeOrg.id),
+          getProfiles(),
         ])
         setDomains(domainsData)
         setOems(oemsData)
+        setTeams(teamsData)
+        setProfiles(profilesData)
       } catch (error) {
         console.error("Failed to load data:", error)
       } finally {
@@ -77,7 +108,7 @@ export default function AdminSettingsPage() {
       }
     }
     loadData()
-  }, [])
+  }, [activeOrg?.id])
 
   // Domain handlers
   const handleAddDomain = async () => {
@@ -178,6 +209,136 @@ export default function AdminSettingsPage() {
   const startEditingOem = (oem: OEM) => {
     setEditingOemId(oem.id)
     setEditingOemName(oem.name)
+  }
+
+  // Team handlers
+  const handleAddTeam = async () => {
+    if (!newTeamName.trim() || !activeOrg?.id) return
+    setIsSaving(true)
+    try {
+      const team = await createTeam({
+        org_id: activeOrg.id,
+        name: newTeamName,
+        description: newTeamDescription || undefined,
+      })
+      setTeams([...teams, team].sort((a, b) => a.name.localeCompare(b.name)))
+      setNewTeamName("")
+      setNewTeamDescription("")
+      setIsAddingTeam(false)
+    } catch (error) {
+      console.error("Failed to add team:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdateTeam = async (teamId: string) => {
+    if (!editingTeamName.trim()) return
+    setIsSaving(true)
+    try {
+      const updated = await updateTeam(teamId, {
+        name: editingTeamName,
+        description: editingTeamDescription || undefined,
+      })
+      setTeams(teams.map(t => t.id === teamId ? updated : t))
+      setEditingTeamId(null)
+    } catch (error) {
+      console.error("Failed to update team:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!confirm("Delete this team? This will remove all members. This cannot be undone.")) return
+    setIsSaving(true)
+    try {
+      await deleteTeam(teamId)
+      setTeams(teams.filter(t => t.id !== teamId))
+      if (expandedTeamId === teamId) setExpandedTeamId(null)
+    } catch (error) {
+      console.error("Failed to delete team:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const startEditingTeam = (team: Team) => {
+    setEditingTeamId(team.id)
+    setEditingTeamName(team.name)
+    setEditingTeamDescription(team.description || "")
+  }
+
+  const toggleTeamExpanded = async (teamId: string) => {
+    if (expandedTeamId === teamId) {
+      setExpandedTeamId(null)
+    } else {
+      setExpandedTeamId(teamId)
+      // Load members if not already loaded
+      if (!teamMembers[teamId]) {
+        try {
+          const members = await getTeamMembers(teamId)
+          setTeamMembers(prev => ({ ...prev, [teamId]: members }))
+        } catch (error) {
+          console.error("Failed to load team members:", error)
+        }
+      }
+    }
+  }
+
+  const handleAddMember = async (teamId: string) => {
+    if (!newMemberUserId) return
+    setIsSaving(true)
+    try {
+      await addTeamMember(teamId, newMemberUserId, newMemberRole)
+      // Reload members
+      const members = await getTeamMembers(teamId)
+      setTeamMembers(prev => ({ ...prev, [teamId]: members }))
+      setIsAddingMember(null)
+      setNewMemberUserId("")
+      setNewMemberRole("tsa")
+    } catch (error) {
+      console.error("Failed to add member:", error)
+      alert((error as Error).message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdateMemberRole = async (teamId: string, userId: string, role: TeamRole) => {
+    setIsSaving(true)
+    try {
+      await updateTeamMemberRole(teamId, userId, role)
+      // Reload members
+      const members = await getTeamMembers(teamId)
+      setTeamMembers(prev => ({ ...prev, [teamId]: members }))
+    } catch (error) {
+      console.error("Failed to update member role:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleRemoveMember = async (teamId: string, userId: string) => {
+    if (!confirm("Remove this member from the team?")) return
+    setIsSaving(true)
+    try {
+      await removeTeamMember(teamId, userId)
+      // Reload members
+      const members = await getTeamMembers(teamId)
+      setTeamMembers(prev => ({ ...prev, [teamId]: members }))
+    } catch (error) {
+      console.error("Failed to remove member:", error)
+      alert((error as Error).message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Get profiles that aren't already members of a team
+  const getAvailableProfiles = (teamId: string) => {
+    const memberIds = (teamMembers[teamId] || []).map(m => m.user_id)
+    return profiles.filter(p => !memberIds.includes(p.id))
   }
 
   if (isLoadingTeam || isLoading) {
@@ -389,6 +550,214 @@ export default function AdminSettingsPage() {
 
               {oems.length === 0 && !isAddingOem && (
                 <p className="text-sm text-slate-500 text-center py-4">No OEMs configured</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Teams */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Teams</CardTitle>
+                <CardDescription>Manage teams and their members in your organization</CardDescription>
+              </div>
+              {!isAddingTeam && (
+                <Button variant="outline" size="sm" onClick={() => setIsAddingTeam(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Team
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {/* Add new team form */}
+              {isAddingTeam && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+                  <Input
+                    placeholder="Team name..."
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    autoFocus
+                  />
+                  <Input
+                    placeholder="Description (optional)..."
+                    value={newTeamDescription}
+                    onChange={(e) => setNewTeamDescription(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddTeam} disabled={isSaving || !newTeamName.trim()}>
+                      <Check className="h-4 w-4 mr-1" />
+                      Create Team
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setIsAddingTeam(false); setNewTeamName(""); setNewTeamDescription(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Team list */}
+              {teams.map((team) => (
+                <div key={team.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                  {/* Team header row */}
+                  <div className="flex items-center gap-2 p-3 bg-white hover:bg-slate-50 transition-colors">
+                    <button
+                      onClick={() => toggleTeamExpanded(team.id)}
+                      className="p-1 hover:bg-slate-100 rounded"
+                    >
+                      {expandedTeamId === team.id ? (
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-slate-500" />
+                      )}
+                    </button>
+
+                    {editingTeamId === team.id ? (
+                      <>
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            value={editingTeamName}
+                            onChange={(e) => setEditingTeamName(e.target.value)}
+                            placeholder="Team name"
+                            autoFocus
+                          />
+                          <Input
+                            value={editingTeamDescription}
+                            onChange={(e) => setEditingTeamDescription(e.target.value)}
+                            placeholder="Description (optional)"
+                          />
+                        </div>
+                        <Button size="sm" onClick={() => handleUpdateTeam(team.id)} disabled={isSaving}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingTeamId(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-900">{team.name}</div>
+                          {team.description && (
+                            <div className="text-sm text-slate-500">{team.description}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400 text-sm">
+                          <Users className="h-4 w-4" />
+                          {teamMembers[team.id]?.length || "..."}
+                        </div>
+                        <Button size="sm" variant="ghost" onClick={() => startEditingTeam(team)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteTeam(team.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Expanded members section */}
+                  {expandedTeamId === team.id && (
+                    <div className="border-t border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-slate-700">Team Members</span>
+                        {isAddingMember !== team.id && (
+                          <Button size="sm" variant="outline" onClick={() => setIsAddingMember(team.id)}>
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Add Member
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Add member form */}
+                      {isAddingMember === team.id && (
+                        <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-blue-200 mb-3">
+                          <Select value={newMemberUserId} onValueChange={setNewMemberUserId}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select user..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getAvailableProfiles(team.id).map((profile) => (
+                                <SelectItem key={profile.id} value={profile.id}>
+                                  {profile.full_name} ({profile.email})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={newMemberRole} onValueChange={(v) => setNewMemberRole(v as TeamRole)}>
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tsa">TSA</SelectItem>
+                              <SelectItem value="manager">Manager</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button size="sm" onClick={() => handleAddMember(team.id)} disabled={isSaving || !newMemberUserId}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setIsAddingMember(null); setNewMemberUserId(""); }}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Members list */}
+                      <div className="space-y-2">
+                        {(teamMembers[team.id] || []).map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200"
+                          >
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-slate-900">
+                                {member.user?.full_name || "Unknown"}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {member.user?.email}
+                              </div>
+                            </div>
+                            <Select
+                              value={member.role}
+                              onValueChange={(role) => handleUpdateMemberRole(team.id, member.user_id, role as TeamRole)}
+                            >
+                              <SelectTrigger className="w-28 h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="tsa">TSA</SelectItem>
+                                <SelectItem value="manager">Manager</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                              onClick={() => handleRemoveMember(team.id, member.user_id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        {teamMembers[team.id]?.length === 0 && (
+                          <p className="text-sm text-slate-500 text-center py-2">No members yet</p>
+                        )}
+                        {!teamMembers[team.id] && (
+                          <div className="flex justify-center py-2">
+                            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {teams.length === 0 && !isAddingTeam && (
+                <p className="text-sm text-slate-500 text-center py-4">No teams configured</p>
               )}
             </div>
           </CardContent>
