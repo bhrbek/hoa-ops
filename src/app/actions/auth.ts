@@ -192,13 +192,18 @@ export async function requireTeamAccess(teamId: string): Promise<{
   role: TeamRole
   isOrgAdmin: boolean
 }> {
+  console.log('[requireTeamAccess] Checking access for team:', teamId)
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  if (!user) {
+    console.log('[requireTeamAccess] Not authenticated')
+    throw new Error('Not authenticated')
+  }
+  console.log('[requireTeamAccess] User:', user.id)
 
   // Check team membership - use maybeSingle() as user might not be a member
-  const { data: membership } = await (supabase as any)
+  const { data: membership, error: membershipError } = await (supabase as any)
     .from('team_memberships')
     .select('role')
     .eq('team_id', teamId)
@@ -206,30 +211,41 @@ export async function requireTeamAccess(teamId: string): Promise<{
     .is('deleted_at', null)
     .maybeSingle()
 
-  // Get team's org to check org admin status
-  const { data: team } = await (supabase as any)
+  console.log('[requireTeamAccess] Membership:', { membership, error: membershipError?.message })
+
+  // Get team's org to check org admin status - use maybeSingle() to avoid throwing
+  const { data: team, error: teamError } = await (supabase as any)
     .from('teams')
     .select('org_id')
     .eq('id', teamId)
-    .single()
+    .maybeSingle()
 
-  if (!team) throw new Error('Team not found')
+  console.log('[requireTeamAccess] Team:', { team, error: teamError?.message })
+
+  if (!team) {
+    console.log('[requireTeamAccess] Team not found')
+    throw new Error('Team not found')
+  }
 
   // Check if org admin - use maybeSingle() to avoid error on 0 rows
-  const { data: orgAdmin } = await (supabase as any)
+  const { data: orgAdmin, error: orgAdminError } = await (supabase as any)
     .from('org_admins')
     .select('id')
     .eq('org_id', team.org_id)
     .eq('user_id', user.id)
     .maybeSingle()
 
+  console.log('[requireTeamAccess] OrgAdmin:', { orgAdmin, error: orgAdminError?.message })
+
   const isOrgAdmin = !!orgAdmin
 
   // User must be either team member or org admin
   if (!membership && !isOrgAdmin) {
+    console.log('[requireTeamAccess] Access denied - not member or org admin')
     throw new Error('Access denied: not a member of this team')
   }
 
+  console.log('[requireTeamAccess] Access granted:', { role: membership?.role || 'tsa', isOrgAdmin })
   return {
     userId: user.id,
     role: membership?.role || 'tsa', // Org admins get tsa role if not explicit member

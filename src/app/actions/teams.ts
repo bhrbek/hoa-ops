@@ -234,21 +234,33 @@ export async function addTeamMember(
   userId: string,
   role: TeamRole = 'tsa'
 ): Promise<TeamMembership> {
-  await requireTeamRole(teamId, 'manager')
+  console.log('[addTeamMember] Starting', { teamId, userId, role })
+
+  try {
+    await requireTeamRole(teamId, 'manager')
+    console.log('[addTeamMember] Role check passed')
+  } catch (err) {
+    console.error('[addTeamMember] Role check failed:', err)
+    throw err
+  }
+
   const supabase = await createClient()
 
   // Check if membership already exists (including soft-deleted)
   // Use maybeSingle() - single() throws error on 0 rows
-  const { data: existing } = await (supabase as any)
+  const { data: existing, error: existingError } = await (supabase as any)
     .from('team_memberships')
     .select('id, deleted_at')
     .eq('team_id', teamId)
     .eq('user_id', userId)
     .maybeSingle()
 
+  console.log('[addTeamMember] Existing check:', { existing, error: existingError?.message })
+
   if (existing) {
     if (existing.deleted_at) {
       // Restore soft-deleted membership
+      console.log('[addTeamMember] Restoring soft-deleted membership')
       const { data: restored, error } = await (supabase as any)
         .from('team_memberships')
         .update({
@@ -260,14 +272,19 @@ export async function addTeamMember(
         .select()
         .single()
 
-      if (error) throw new Error('Failed to restore membership')
+      if (error) {
+        console.error('[addTeamMember] Restore failed:', error)
+        throw new Error('Failed to restore membership')
+      }
 
       revalidatePath('/settings/admin')
       return restored
     }
+    console.log('[addTeamMember] User already a member')
     throw new Error('User is already a member of this team')
   }
 
+  console.log('[addTeamMember] Inserting new membership')
   const { data: membership, error } = await (supabase as any)
     .from('team_memberships')
     .insert({
@@ -279,10 +296,11 @@ export async function addTeamMember(
     .single()
 
   if (error) {
-    console.error('Error adding team member:', error)
-    throw new Error('Failed to add team member')
+    console.error('[addTeamMember] Insert failed:', error)
+    throw new Error(`Failed to add team member: ${error.message}`)
   }
 
+  console.log('[addTeamMember] Success:', membership?.id)
   revalidatePath('/settings/admin')
   return membership
 }
