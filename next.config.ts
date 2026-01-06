@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion,
   },
+  // Disable Turbopack to ensure middleware works correctly
+  turbopack: false,
 };
 
 export default nextConfig;
