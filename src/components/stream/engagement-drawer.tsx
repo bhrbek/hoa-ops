@@ -425,12 +425,15 @@ export function EngagementDrawer({
 
             <div className="space-y-2">
               <Label htmlFor="linked-rock">Link to Rock (Evidence)</Label>
-              <Select value={linkedRock} onValueChange={setLinkedRock}>
+              <Select
+                value={linkedRock || "none"}
+                onValueChange={(val) => setLinkedRock(val === "none" ? "" : val)}
+              >
                 <SelectTrigger id="linked-rock">
                   <SelectValue placeholder="Select a rock to link..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No link</SelectItem>
+                  <SelectItem value="none">No link</SelectItem>
                   {rocks.map((rock) => (
                     <SelectItem key={rock.id} value={rock.id}>
                       {rock.title}
