@@ -55,30 +55,39 @@ export async function getProfiles(): Promise<Profile[]> {
 
   const supabase = await createClient()
 
-  // Get profiles that are members of teams in the same org
-  const { data, error } = await (supabase as any)
-    .from('profiles')
+  // Get all team memberships for teams in this org, then get unique profiles
+  const { data: memberships, error: membershipError } = await (supabase as any)
+    .from('team_memberships')
     .select(`
-      *,
-      team_memberships!inner(
-        team:teams!inner(org_id)
-      )
+      user_id,
+      team:teams!inner(org_id)
     `)
-    .eq('team_memberships.team.org_id', activeTeam.org.id)
-    .order('full_name')
+    .eq('team.org_id', activeTeam.org.id)
+    .is('deleted_at', null)
 
-  if (error) {
-    console.error('Error fetching profiles:', error)
-    throw new Error('Failed to fetch profiles')
+  if (membershipError) {
+    console.error('Error fetching memberships:', membershipError)
+    return []
   }
 
-  // Dedupe profiles (user may be in multiple teams)
-  const seen = new Set<string>()
-  return (data || []).filter((p: Profile) => {
-    if (seen.has(p.id)) return false
-    seen.add(p.id)
-    return true
-  })
+  if (!memberships || memberships.length === 0) return []
+
+  // Get unique user IDs
+  const userIds = [...new Set(memberships.map((m: any) => m.user_id))]
+
+  // Fetch profiles for these users
+  const { data: profiles, error: profileError } = await (supabase as any)
+    .from('profiles')
+    .select('*')
+    .in('id', userIds)
+    .order('full_name')
+
+  if (profileError) {
+    console.error('Error fetching profiles:', profileError)
+    return []
+  }
+
+  return profiles || []
 }
 
 /**
