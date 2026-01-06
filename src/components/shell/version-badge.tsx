@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-const VERSION = "20260106-v17"
+const VERSION = "20260106-v18"
 
 export function VersionBadge() {
   const [copied, setCopied] = useState(false)

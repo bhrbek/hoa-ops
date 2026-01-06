@@ -85,27 +85,33 @@ export default function AdminSettingsPage() {
 
   const [isSaving, setIsSaving] = React.useState(false)
 
-  // Load data
+  // Load data - fetch independently so one failure doesn't break all
   React.useEffect(() => {
     async function loadData() {
       if (!activeOrg?.id) return
       setIsLoading(true)
-      try {
-        const [domainsData, oemsData, teamsData, profilesData] = await Promise.all([
-          getDomains(),
-          getOEMs(),
-          getTeams(activeOrg.id),
-          getProfiles(),
-        ])
-        setDomains(domainsData)
-        setOems(oemsData)
-        setTeams(teamsData)
-        setProfiles(profilesData)
-      } catch (error) {
-        console.error("Failed to load data:", error)
-      } finally {
-        setIsLoading(false)
-      }
+
+      // Load each independently so failures are isolated
+      const [domainsResult, oemsResult, teamsResult, profilesResult] = await Promise.allSettled([
+        getDomains(),
+        getOEMs(),
+        getTeams(activeOrg.id),
+        getProfiles(),
+      ])
+
+      if (domainsResult.status === 'fulfilled') setDomains(domainsResult.value)
+      else console.error("Failed to load domains:", domainsResult.reason)
+
+      if (oemsResult.status === 'fulfilled') setOems(oemsResult.value)
+      else console.error("Failed to load OEMs:", oemsResult.reason)
+
+      if (teamsResult.status === 'fulfilled') setTeams(teamsResult.value)
+      else console.error("Failed to load teams:", teamsResult.reason)
+
+      if (profilesResult.status === 'fulfilled') setProfiles(profilesResult.value)
+      else console.error("Failed to load profiles:", profilesResult.reason)
+
+      setIsLoading(false)
     }
     loadData()
   }, [activeOrg?.id])

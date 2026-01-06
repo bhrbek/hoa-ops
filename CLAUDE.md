@@ -367,6 +367,9 @@ Current migration files (in order):
 | 011_fix_function_search_paths.sql | Security: search_path on functions |
 | 012_fix_profile_trigger.sql | Profile auto-creation trigger |
 | 013_fix_enablement_event_assets_rls.sql | RLS for enablement_event_assets |
+| 014_fix_team_memberships_rls.sql | Fix circular dependency in team_memberships |
+| 015_fix_all_rls_circular_deps.sql | Fix circular deps in org_admins, teams, orgs |
+| 016_fix_teams_select_policy.sql | Fix column reference bug in teams_select |
 
 **To push new migrations:**
 ```bash
@@ -383,3 +386,95 @@ Next.js 16 Turbopack (dev mode) does not execute middleware. Auth redirects only
 - Or manually navigate to /login
 
 **Production works correctly** - Vercel deployments will have proper auth.
+
+---
+
+## RLS POLICY BEST PRACTICES (LESSONS LEARNED)
+
+These rules were learned from debugging circular dependency and column reference bugs in migrations 014-016.
+
+### 1. Always Add Self-Access Escape Hatch
+
+When a policy on table X uses a helper function that queries table X, users can't bootstrap access.
+
+**BAD:**
+```sql
+CREATE POLICY "team_memberships_select" ON team_memberships FOR SELECT
+  USING (is_team_member(team_id));  -- is_team_member queries team_memberships!
+```
+
+**GOOD:**
+```sql
+CREATE POLICY "team_memberships_select" ON team_memberships FOR SELECT
+  USING (
+    user_id = auth.uid()  -- Escape hatch: users can always read OWN records
+    OR is_team_member(team_id)
+    OR is_org_admin(get_org_from_team(team_id))
+  );
+```
+
+### 2. Always Use Explicit Table References in Subqueries
+
+PostgreSQL resolves ambiguous column names to the innermost scope. In a subquery, `id` refers to the subquery's table, not the outer table.
+
+**BAD:**
+```sql
+-- This compares tm.team_id to tm.id (same table - wrong!)
+WHERE tm.team_id = id
+```
+
+**GOOD:**
+```sql
+-- Explicitly reference the outer table
+WHERE tm.team_id = teams.id
+```
+
+### 3. Test RLS with Simulated User Context
+
+```bash
+PGPASSWORD='xxx' psql "connection_string" -c "
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{\"sub\": \"user-uuid-here\"}';
+SELECT * FROM teams WHERE deleted_at IS NULL;
+"
+```
+
+### 4. Supabase Nested Selects Fail Silently
+
+If a column doesn't exist in a nested select, the entire select returns empty/null without error:
+
+```typescript
+// If 'slug' column doesn't exist on orgs table, this returns null for org
+const { data } = await supabase
+  .from('teams')
+  .select('*, org:orgs(id, name, slug)')  // slug doesn't exist!
+```
+
+**Always verify column names exist** before adding them to nested selects.
+
+### 5. Use maybeSingle() Instead of single()
+
+`.single()` throws an error on 0 rows. `.maybeSingle()` returns null.
+
+**BAD:**
+```typescript
+const { data } = await supabase.from('org_admins')
+  .select('id').eq('user_id', userId).single()  // Throws on 0 rows!
+```
+
+**GOOD:**
+```typescript
+const { data } = await supabase.from('org_admins')
+  .select('id').eq('user_id', userId).maybeSingle()  // Returns null on 0 rows
+```
+
+### 6. RLS Debugging Checklist
+
+When RLS queries return empty unexpectedly:
+
+1. **Verify data exists** (query as postgres bypassing RLS)
+2. **Check for circular dependencies** (policy uses function that queries same table)
+3. **Check column references** (subqueries may reference wrong table)
+4. **Check nested selects** (non-existent columns fail silently)
+5. **Check for .single() vs .maybeSingle()** (single() throws on 0 rows)
+6. **Create debug endpoint** to isolate server action vs RLS issues

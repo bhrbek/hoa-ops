@@ -786,3 +786,106 @@ Added content-shaped skeleton loading for better perceived performance.
 | Phase 11: Vista Real Data + Skeleton Loading | ✅ Complete | Dashboard now uses real data |
 
 **All phases complete! Application is fully functional.**
+
+---
+
+## Phase 12: RLS Debugging & Fixes (2026-01-06)
+
+Critical debugging session to fix authentication/authorization issues preventing Settings visibility.
+
+### Problem Statement
+User `hrbekr@wwt.com` was authenticated but:
+- `isOrgAdmin` showed `false` in TeamContext
+- `teams` array was empty `[]`
+- Settings nav item didn't appear (requires `isOrgAdmin === true`)
+
+**The data existed in the database** (verified via direct postgres query), but RLS was blocking client queries.
+
+### Root Causes Found
+
+#### 1. RLS Circular Dependencies (migrations 014, 015)
+Users couldn't read their own records to bootstrap access:
+
+| Table | Problem | Fix |
+|-------|---------|-----|
+| `team_memberships` | `is_team_member()` queries same table | Added `user_id = auth.uid()` |
+| `org_admins` | `is_org_admin()` queries same table | Added `user_id = auth.uid()` |
+
+#### 2. Column Reference Bug in teams_select (migration 016)
+The most insidious bug - ambiguous column names resolved incorrectly:
+
+```sql
+-- BUGGY (from migration 015):
+WHERE tm.team_id = tm.id      -- Compares to ITSELF (team_memberships.id)
+WHERE oa.org_id = oa.org_id   -- Always TRUE!
+
+-- FIXED:
+WHERE tm.team_id = teams.id   -- Explicit outer table reference
+WHERE oa.org_id = teams.org_id
+```
+
+**Lesson**: When writing RLS policies with subqueries, ALWAYS explicitly reference the outer table's columns using the table name.
+
+#### 3. Non-Existent Column in Queries
+The `orgs` table has no `slug` column, but auth.ts was querying for it:
+```typescript
+org:orgs(id, name, slug)  // slug doesn't exist!
+```
+This caused nested select to fail SILENTLY.
+
+### Migrations Applied
+
+| Migration | Purpose |
+|-----------|---------|
+| `014_fix_team_memberships_rls.sql` | Users can read own memberships |
+| `015_fix_all_rls_circular_deps.sql` | Fix org_admins, teams, orgs policies |
+| `016_fix_teams_select_policy.sql` | Fix column references in teams_select |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/actions/auth.ts` | Remove `slug` from orgs queries |
+| `src/app/actions/orgs.ts` | Remove `slug` from updateOrg |
+| `src/types/supabase.ts` | Remove `slug` from Org type |
+| `src/components/shell/version-badge.tsx` | Hardcode version for deployment tracking |
+
+### Debug Artifacts Created
+
+A `codereview/` folder was created with all relevant files and analysis documentation. Useful for future debugging.
+
+### Key Lessons Learned
+
+1. **RLS Circular Dependencies**: Users must be able to read their OWN records without needing to prove access first. Always add `user_id = auth.uid()` as an escape hatch.
+
+2. **Ambiguous Column Names**: PostgreSQL resolves ambiguous names to the innermost scope. In RLS subqueries, ALWAYS prefix with the outer table name.
+
+3. **Silent Failures**: Supabase nested selects fail silently when a column doesn't exist. Check your schema!
+
+4. **Debug Endpoints**: A simple `/api/debug` route that runs raw queries is invaluable for tracing RLS issues vs. code issues.
+
+5. **Version Badges**: Hardcode version in the UI to verify deployments are live.
+
+6. **Vercel Latency**: Deployments take time. Check the version badge before assuming code changes are live.
+
+### Testing Commands
+
+```bash
+# Simulate RLS as a specific user
+PGPASSWORD='...' psql "postgresql://..." -c "
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{\"sub\": \"user-uuid\"}';
+SELECT * FROM teams WHERE deleted_at IS NULL;
+"
+
+# Verify RLS policy definition
+SELECT polname, pg_get_expr(polqual, polrelid) as policy
+FROM pg_policy
+WHERE polrelid = 'public.teams'::regclass;
+```
+
+---
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 12: RLS Debugging & Fixes | ✅ Complete | All RLS issues identified and fixed |

@@ -51,7 +51,7 @@ export async function getOEMs(): Promise<OEM[]> {
  */
 export async function getProfiles(): Promise<Profile[]> {
   const activeTeam = await getActiveTeam()
-  if (!activeTeam) return []
+  if (!activeTeam?.org?.id) return []
 
   const supabase = await createClient()
 
