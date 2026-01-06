@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { X, Search, DollarSign, Link2, User, Clock } from "lucide-react"
 import {
   Sheet,
@@ -189,6 +190,8 @@ export function EngagementDrawer({
         await onSave(formData)
       }
 
+      toast.success(isEditing ? "Engagement updated" : "Engagement logged")
+
       if (andLogAnother) {
         resetForm()
       } else {
@@ -196,6 +199,7 @@ export function EngagementDrawer({
       }
     } catch (error) {
       console.error("Failed to save engagement:", error)
+      toast.error("Failed to save engagement")
     } finally {
       setIsSaving(false)
     }

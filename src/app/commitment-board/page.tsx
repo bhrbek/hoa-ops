@@ -12,6 +12,7 @@ import {
   Clock,
   MoreHorizontal,
   Loader2,
+  RefreshCw,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -132,6 +133,7 @@ export default function CommitmentBoardPage() {
   const [commitments, setCommitments] = React.useState<UICommitment[]>([])
   const [teamMembers, setTeamMembers] = React.useState<UITeamMember[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
 
   const fetchData = React.useCallback(async () => {
@@ -139,10 +141,12 @@ export default function CommitmentBoardPage() {
       setCommitments([])
       setTeamMembers([])
       setIsLoadingData(false)
+      setError(null)
       return
     }
 
     setIsLoadingData(true)
+    setError(null)
     try {
       const weekOf = getWeekOf(currentWeek)
       const data = await getActiveCommitments(weekOf)
@@ -172,10 +176,11 @@ export default function CommitmentBoardPage() {
       })
 
       setTeamMembers(Array.from(memberMap.values()))
-    } catch (error) {
-      console.error('Failed to fetch commitments:', error)
+    } catch (err) {
+      console.error('Failed to fetch commitments:', err)
       setCommitments([])
       setTeamMembers([])
+      setError('Failed to load commitments. Please try again.')
     } finally {
       setIsLoadingData(false)
     }
@@ -291,6 +296,18 @@ export default function CommitmentBoardPage() {
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                 <span className="ml-3 text-slate-500">Loading commitments...</span>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Failed to Load</h3>
+                <p className="text-sm text-slate-500 max-w-md mb-4">{error}</p>
+                <Button variant="outline" className="gap-2" onClick={() => fetchData()}>
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
+                </Button>
               </div>
             ) : teamMembers.length === 0 && commitments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { Target } from "lucide-react"
 import {
   Dialog,
@@ -149,11 +150,14 @@ export function CreateCommitmentDialog({
         await onSave(data)
       }
 
+      toast.success("Commitment created successfully")
+
       // Reset and close
       resetForm()
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to create commitment:", error)
+      toast.error("Failed to create commitment")
     } finally {
       setIsSaving(false)
     }

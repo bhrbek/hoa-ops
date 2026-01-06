@@ -11,6 +11,8 @@ import {
   Calendar,
   ChevronDown,
   Loader2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -68,64 +70,68 @@ export default function ReportsPage() {
   const [oemPairs, setOemPairs] = React.useState<OEMPair[]>([])
   const [domainTrends, setDomainTrends] = React.useState<DomainTrend[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const fetchData = React.useCallback(async () => {
+    if (!activeTeam) {
+      setStats(null)
+      setOemPairs([])
+      setDomainTrends([])
+      setIsLoadingData(false)
+      setError(null)
+      return
+    }
+
+    setIsLoadingData(true)
+    setError(null)
+    try {
+      // Fetch all report data in parallel
+      const [statsData, oemData, engagementsData] = await Promise.all([
+        getActiveEngagementStats(),
+        getOEMBuyingPatterns(10),
+        getActiveEngagements({ limit: 500 })
+      ])
+
+      setStats(statsData)
+      setOemPairs(oemData)
+
+      // Aggregate domain trends from engagements
+      const domainMap = new Map<string, { engagements: number; revenue: number }>()
+      engagementsData.forEach(e => {
+        e.domains?.forEach(d => {
+          const existing = domainMap.get(d.name) || { engagements: 0, revenue: 0 }
+          domainMap.set(d.name, {
+            engagements: existing.engagements + 1,
+            revenue: existing.revenue + e.revenue_impact
+          })
+        })
+      })
+
+      const trends = Array.from(domainMap.entries())
+        .map(([domain, data]) => ({
+          domain,
+          engagements: data.engagements,
+          revenue: data.revenue
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+
+      setDomainTrends(trends)
+    } catch (err) {
+      console.error('Failed to fetch report data:', err)
+      setStats(null)
+      setOemPairs([])
+      setDomainTrends([])
+      setError('Failed to load report data. Please try again.')
+    } finally {
+      setIsLoadingData(false)
+    }
+  }, [activeTeam?.id])
 
   // Fetch report data when team changes
   React.useEffect(() => {
-    async function fetchData() {
-      if (!activeTeam) {
-        setStats(null)
-        setOemPairs([])
-        setDomainTrends([])
-        setIsLoadingData(false)
-        return
-      }
-
-      setIsLoadingData(true)
-      try {
-        // Fetch all report data in parallel
-        const [statsData, oemData, engagementsData] = await Promise.all([
-          getActiveEngagementStats(),
-          getOEMBuyingPatterns(10),
-          getActiveEngagements({ limit: 500 })
-        ])
-
-        setStats(statsData)
-        setOemPairs(oemData)
-
-        // Aggregate domain trends from engagements
-        const domainMap = new Map<string, { engagements: number; revenue: number }>()
-        engagementsData.forEach(e => {
-          e.domains?.forEach(d => {
-            const existing = domainMap.get(d.name) || { engagements: 0, revenue: 0 }
-            domainMap.set(d.name, {
-              engagements: existing.engagements + 1,
-              revenue: existing.revenue + e.revenue_impact
-            })
-          })
-        })
-
-        const trends = Array.from(domainMap.entries())
-          .map(([domain, data]) => ({
-            domain,
-            engagements: data.engagements,
-            revenue: data.revenue
-          }))
-          .sort((a, b) => b.revenue - a.revenue)
-          .slice(0, 10)
-
-        setDomainTrends(trends)
-      } catch (error) {
-        console.error('Failed to fetch report data:', error)
-        setStats(null)
-        setOemPairs([])
-        setDomainTrends([])
-      } finally {
-        setIsLoadingData(false)
-      }
-    }
-
     fetchData()
-  }, [activeTeam?.id])
+  }, [fetchData])
 
   const isPageLoading = isLoading || isLoadingData
 
@@ -158,7 +164,27 @@ export default function ReportsPage() {
       </header>
 
       <div className="p-8 space-y-8">
+        {/* Error State */}
+        {error && !isPageLoading && (
+          <Card>
+            <CardContent className="p-0">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Failed to Load</h3>
+                <p className="text-sm text-slate-500 max-w-md mb-4">{error}</p>
+                <Button variant="outline" className="gap-2" onClick={() => fetchData()}>
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Report Tabs */}
+        {!error && (
         <Tabs defaultValue="assets" className="space-y-6">
           <TabsList className="bg-white border border-slate-200">
             <TabsTrigger value="assets" className="gap-2">
@@ -312,6 +338,7 @@ export default function ReportsPage() {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
 
         {/* Disclaimer */}
         <div className="text-center text-xs text-slate-400 py-4">

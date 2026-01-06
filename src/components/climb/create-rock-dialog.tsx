@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { Flag } from "lucide-react"
 import {
   Dialog,
@@ -87,6 +88,8 @@ export function CreateRockDialog({ open, onOpenChange, onSave }: CreateRockDialo
         await onSave(data)
       }
 
+      toast.success("Rock created successfully")
+
       // Reset and close
       setTitle("")
       setOwner("")
@@ -96,6 +99,7 @@ export function CreateRockDialog({ open, onOpenChange, onSave }: CreateRockDialo
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to create rock:", error)
+      toast.error("Failed to create rock")
     } finally {
       setIsSaving(false)
     }

@@ -16,6 +16,7 @@ import {
   MoreVertical,
   Calendar,
   Loader2,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -197,6 +198,7 @@ export default function RocksPage() {
   const [rocks, setRocks] = React.useState<UIRock[]>([])
   const [rawRocks, setRawRocks] = React.useState<RockWithProjects[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isProjectDialogOpen, setIsProjectDialogOpen] = React.useState(false)
   const [selectedRockId, setSelectedRockId] = React.useState<string | undefined>()
@@ -208,10 +210,12 @@ export default function RocksPage() {
       setRocks([])
       setRawRocks([])
       setIsLoadingData(false)
+      setError(null)
       return
     }
 
     setIsLoadingData(true)
+    setError(null)
     try {
       // Fetch rocks and engagements in parallel
       const [rocksData, engagementsData] = await Promise.all([
@@ -227,10 +231,11 @@ export default function RocksPage() {
       if (transformedRocks.length > 0 && expandedRocks.length === 0) {
         setExpandedRocks([transformedRocks[0].id])
       }
-    } catch (error) {
-      console.error('Failed to fetch rocks:', error)
+    } catch (err) {
+      console.error('Failed to fetch rocks:', err)
       setRocks([])
       setRawRocks([])
+      setError('Failed to load rocks. Please try again.')
     } finally {
       setIsLoadingData(false)
     }
@@ -357,6 +362,18 @@ export default function RocksPage() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
             <span className="ml-3 text-slate-500">Loading rocks...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Failed to Load</h3>
+            <p className="text-sm text-slate-500 max-w-md mb-4">{error}</p>
+            <Button variant="outline" className="gap-2" onClick={() => fetchData()}>
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
           </div>
         ) : rocks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">

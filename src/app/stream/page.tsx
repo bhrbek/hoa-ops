@@ -13,6 +13,8 @@ import {
   Link2,
   Download,
   Loader2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -108,22 +110,26 @@ export default function StreamPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [engagements, setEngagements] = React.useState<UIEngagement[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const { activeTeam, isLoading } = useTeam()
 
   const fetchEngagements = React.useCallback(async () => {
     if (!activeTeam) {
       setEngagements([])
       setIsLoadingData(false)
+      setError(null)
       return
     }
 
     setIsLoadingData(true)
+    setError(null)
     try {
       const data = await getActiveEngagements({ limit: 100 })
       setEngagements(data.map(transformEngagement))
-    } catch (error) {
-      console.error('Failed to fetch engagements:', error)
+    } catch (err) {
+      console.error('Failed to fetch engagements:', err)
       setEngagements([])
+      setError('Failed to load engagements. Please try again.')
     } finally {
       setIsLoadingData(false)
     }
@@ -243,6 +249,18 @@ export default function StreamPage() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
               <span className="ml-3 text-slate-500">Loading engagements...</span>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Failed to Load</h3>
+              <p className="text-sm text-slate-500 max-w-md mb-4">{error}</p>
+              <Button variant="outline" className="gap-2" onClick={() => fetchEngagements()}>
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
             </div>
           ) : engagements.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { toast } from "sonner"
 import { Folder, AlertTriangle } from "lucide-react"
 import {
   Dialog,
@@ -102,6 +103,8 @@ export function CreateProjectDialog({
         await onSave(data)
       }
 
+      toast.success("Project created successfully")
+
       // Reset and close
       setRockId(defaultRockId || "")
       setTitle("")
@@ -112,6 +115,7 @@ export function CreateProjectDialog({
       onOpenChange(false)
     } catch (error) {
       console.error("Failed to create project:", error)
+      toast.error("Failed to create project")
     } finally {
       setIsSaving(false)
     }

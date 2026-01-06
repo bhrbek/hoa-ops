@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { Toaster } from "sonner"
 import "./globals.css"
 import { AppShell } from "@/components/shell/app-shell"
 import { VersionBadge } from "@/components/shell/version-badge"
@@ -29,6 +30,7 @@ export default function RootLayout({
           {children}
         </AppShell>
         <VersionBadge />
+        <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>
   )

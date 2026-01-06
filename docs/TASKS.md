@@ -541,6 +541,7 @@ Server actions use `requireTeamAccess()` but RLS is more restrictive (owner/mana
 |-------|--------|-------|
 | Phase 7: UI Data Wiring | ✅ Complete | All create dialogs and data fetching wired up |
 | Phase 8: Security Hardening | ✅ Complete | All P1/P2 authorization fixes implemented |
+| Phase 9: UI Polish & Performance | ✅ Complete | Toasts, error boundaries, indexes |
 
 ---
 
@@ -576,3 +577,77 @@ Principal Software Engineer security review identified authorization gaps. All i
 - `src/app/actions/commitments.ts` - Owner/manager role for carry/split/drop
 - `src/app/actions/engagements.ts` - Team scoping for OEM patterns
 - `src/app/actions/orgs.ts` - Org membership check on getOrg
+
+---
+
+## Phase 9: UI Polish & Performance (2026-01-06)
+
+Two parallel implementation tracks for better UX and database performance.
+
+### Track A: UI Polish
+
+#### A1: Toast Notification System
+- [x] Install sonner toast library (`npm install sonner`)
+- [x] Add `<Toaster />` to `src/app/layout.tsx`
+- [x] Add toast notifications to create/update dialogs:
+  - `src/components/stream/engagement-drawer.tsx` - success/error toasts
+  - `src/components/climb/create-rock-dialog.tsx` - success/error toasts
+  - `src/components/climb/create-project-dialog.tsx` - success/error toasts
+  - `src/components/commitment/create-commitment-dialog.tsx` - success/error toasts
+
+#### A2: Error Boundaries
+- [x] Create `src/app/error.tsx` - Route error boundary with retry button
+- [x] Create `src/app/global-error.tsx` - Root layout error boundary
+
+#### A3: Page-Level Error States
+- [x] Add error state handling to pages to distinguish "no data" from "fetch failed":
+  - `src/app/stream/page.tsx` - error state with retry button
+  - `src/app/rocks/page.tsx` - error state with retry button
+  - `src/app/commitment-board/page.tsx` - error state with retry button
+  - `src/app/reports/page.tsx` - error state with retry button
+
+### Track B: Database Performance
+
+#### B1-B4: Performance Indexes (migration 013)
+- [x] Team-scoped indexes with soft-delete filter:
+  - `idx_rocks_team`, `idx_projects_team`, `idx_engagements_team`
+  - `idx_milestones_team`, `idx_enablement_events_team`, `idx_assets_team`
+  - `idx_tasks_team`, `idx_team_memberships_team`
+- [x] Composite indexes for common queries:
+  - `idx_rocks_team_quarter`, `idx_rocks_team_status`, `idx_projects_team_status`
+  - `idx_commitments_team_week`, `idx_milestones_team_duedate`
+  - `idx_enablement_events_team_date`
+- [x] Foreign key indexes:
+  - `idx_milestones_project`, `idx_engagement_assets_*`, `idx_project_assets_*`
+  - `idx_enablement_event_assets_*`
+- [x] Org-scoped index: `idx_customers_org`
+
+#### B5-B6: RPC Functions (migration 013)
+- [x] `get_engagement_stats(team_id)` - Database-level aggregation for stats
+- [x] `get_oem_buying_patterns_for_team(team_id, limit)` - Team-scoped OEM analysis
+
+### Files Created
+- `supabase/migrations/013_add_performance_indexes.sql` (24 indexes + 2 RPC functions)
+- `src/app/error.tsx` (route error boundary)
+- `src/app/global-error.tsx` (root error boundary)
+
+### Files Modified
+- `src/app/layout.tsx` - Added Toaster provider
+- `src/components/stream/engagement-drawer.tsx` - Added toasts
+- `src/components/climb/create-rock-dialog.tsx` - Added toasts
+- `src/components/climb/create-project-dialog.tsx` - Added toasts
+- `src/components/commitment/create-commitment-dialog.tsx` - Added toasts
+- `src/app/stream/page.tsx` - Added error state
+- `src/app/rocks/page.tsx` - Added error state
+- `src/app/commitment-board/page.tsx` - Added error state
+- `src/app/reports/page.tsx` - Added error state
+- `middleware.ts` - Fixed TypeScript typing for CookieOptions
+
+### Dependencies Added
+- `sonner` - Lightweight toast notification library
+
+---
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 9: UI Polish & Performance | ✅ Complete | All A and B tracks implemented |
