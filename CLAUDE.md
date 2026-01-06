@@ -372,3 +372,14 @@ Current migration files (in order):
 ```bash
 supabase db push
 ```
+
+
+### Known Issue: Turbopack Middleware
+
+Next.js 16 Turbopack (dev mode) does not execute middleware. Auth redirects only work in production.
+
+**Workaround for development:**
+- Run `npm run build && npm run start` to test with middleware
+- Or manually navigate to /login
+
+**Production works correctly** - Vercel deployments will have proper auth.

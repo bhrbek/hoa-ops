@@ -150,12 +150,20 @@ export async function getActiveTeam(): Promise<ActiveTeamContext | null> {
   if (!membership) return null
 
   // Check if user is org admin
-  const { data: orgAdmin } = await (supabase as any)
+  const { data: orgAdmin, error: orgAdminError } = await (supabase as any)
     .from('org_admins')
     .select('id')
     .eq('org_id', team.org_id)
     .eq('user_id', user.id)
     .single()
+
+  console.log('[getActiveTeam DEBUG]', {
+    userId: user.id,
+    teamId: team.id,
+    orgId: team.org_id,
+    orgAdmin: !!orgAdmin,
+    orgAdminError: orgAdminError?.message
+  })
 
   return {
     team: team as Team,

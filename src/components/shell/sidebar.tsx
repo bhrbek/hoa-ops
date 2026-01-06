@@ -53,8 +53,18 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isLoading, isOrgAdmin } = useTeam()
+  const { user, isLoading, isOrgAdmin, activeTeam } = useTeam()
   const [isSigningOut, setIsSigningOut] = React.useState(false)
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[SIDEBAR DEBUG]', {
+      user: user?.email,
+      isOrgAdmin,
+      isLoading,
+      activeTeam: activeTeam?.name
+    })
+  }, [user, isOrgAdmin, isLoading, activeTeam])
 
   const handleSignOut = async () => {
     setIsSigningOut(true)

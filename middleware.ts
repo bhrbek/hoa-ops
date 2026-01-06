@@ -1,9 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  console.log('[MIDDLEWARE]', pathname)
 
   // Allow login and auth routes without auth check
   if (pathname.startsWith('/login') || pathname.startsWith('/auth')) {
