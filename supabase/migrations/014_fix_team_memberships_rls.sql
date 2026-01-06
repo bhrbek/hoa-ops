@@ -1,18 +1,14 @@
--- Fix circular dependency in team_memberships RLS policy
--- Users must be able to read their OWN membership to bootstrap access
+-- Fix RLS circular dependency on team_memberships
+-- Users need to see their own memberships to bootstrap team context
 
-DROP POLICY IF EXISTS "team_memberships_select" ON public.team_memberships;
-
-CREATE POLICY "team_memberships_select" ON public.team_memberships FOR SELECT
-  TO authenticated
+DROP POLICY IF EXISTS team_memberships_select ON team_memberships;
+CREATE POLICY team_memberships_select ON team_memberships
+  FOR SELECT
   USING (
     deleted_at IS NULL
     AND (
-      -- Users can always read their OWN memberships
-      user_id = auth.uid()
-      -- Or if they're already a team member (for viewing other members)
+      user_id = auth.uid()  -- Can always see your own memberships
       OR is_team_member(team_id)
-      -- Or if they're an org admin
       OR is_org_admin(get_org_from_team(team_id))
     )
   );
