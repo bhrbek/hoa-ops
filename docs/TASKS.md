@@ -509,3 +509,34 @@ Server actions use `requireTeamAccess()` but RLS is more restrictive (owner/mana
 - **Track D (TypeScript)**: ✅ Complete - all P2 UX fixes implemented
 
 **All phases complete!**
+
+---
+
+## Phase 7: UI Data Wiring
+
+### 7.1 Wire Up Create Dialogs
+- [x] **Stream Page**: Connect EngagementDrawer onSave to createEngagement action
+- [x] **Rocks Page**: Wire up CreateRockDialog to createRock action
+- [x] **Rocks Page**: Wire up CreateProjectDialog to createProject action
+- [x] **Commitment Board**: Create new CreateCommitmentDialog component
+- [x] **Commitment Board**: Wire up dialog to createCommitment action
+
+### 7.2 Wire Up Data Fetching
+- [x] **Stream Page**: Fetch real engagements via getActiveEngagements()
+- [x] **Rocks Page**: Fetch real rocks via getActiveRocks()
+- [x] **Commitment Board**: Fetch real commitments via getActiveCommitments()
+- [x] **Reports Page**: Fetch real analytics data
+
+### 7.3 New Components Created
+- `src/components/commitment/create-commitment-dialog.tsx` - Dialog for creating commitments with rock/project/build-signal selection
+
+### 7.4 Rebranding
+- [x] Renamed "The Climb" to "Rocks" throughout codebase
+- [x] Renamed "The Jar" to "Headwaters" throughout codebase
+- [x] Updated sidebar navigation with Mountain icon for Rocks
+
+---
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 7: UI Data Wiring | ✅ Complete | All create dialogs and data fetching wired up |
