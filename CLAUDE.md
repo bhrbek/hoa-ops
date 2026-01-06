@@ -246,3 +246,17 @@ import { getAssets } from '@/app/actions/assets'
   refreshTeamData: () => Promise<void>
 }
 ```
+
+---
+
+## DEVELOPMENT NOTES
+
+### AI-Assisted Development
+This project uses Claude Code for development assistance including:
+- Phase 4 UI Components implementation
+- Documentation creation and maintenance
+- Code reviews and architecture decisions
+
+### Contributors
+- Human developers: Primary architecture and product decisions
+- Claude (Anthropic): Implementation assistance for server actions, UI components, and documentation
