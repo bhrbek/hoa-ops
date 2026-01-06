@@ -2,101 +2,96 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Calendar, TrendingUp, DollarSign, Users, Presentation, ChevronRight, CheckCircle2, Circle, Plus, Clock } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  Users,
+  Presentation,
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  Plus,
+  Clock,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { formatCompactCurrency } from "@/lib/utils"
+import { formatCompactCurrency, formatShortDate } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
 import { useTeam } from "@/contexts/team-context"
+import { getActiveRocks } from "@/app/actions/rocks"
+import { getActiveEngagements, getActiveEngagementStats } from "@/app/actions/engagements"
+import { VistaSkeleton } from "@/components/vista/vista-skeleton"
+import type { RockWithProjects, EngagementWithRelations } from "@/types/supabase"
 
-// Mock data
-const scorecard = [
-  {
-    title: "Revenue Influenced",
-    value: 1250000,
-    format: "currency",
-    change: "+12%",
-    trend: "up",
-    icon: DollarSign,
-  },
-  {
-    title: "Engagements",
-    value: 47,
-    format: "number",
-    change: "+8",
-    trend: "up",
-    icon: Users,
-  },
-  {
-    title: "Rock Velocity",
-    value: 72,
-    format: "percent",
-    change: "+5%",
-    trend: "up",
-    icon: TrendingUp,
-  },
-  {
-    title: "Workshops Delivered",
-    value: 12,
-    format: "number",
-    change: "+3",
-    trend: "up",
-    icon: Presentation,
-  },
+// Avatar color palette for consistent user colors
+const AVATAR_COLORS = [
+  "bg-indigo-100 text-indigo-700",
+  "bg-amber-100 text-amber-700",
+  "bg-pink-100 text-pink-700",
+  "bg-teal-100 text-teal-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-purple-100 text-purple-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
+  "bg-orange-100 text-orange-700",
+  "bg-blue-100 text-blue-700",
 ]
 
-const activeRocks = [
-  {
-    id: "1",
-    title: "Q1 Enterprise Cloud Migration",
-    owner: { name: "Sarah J.", initials: "SJ", color: "bg-blue-100 text-blue-700" },
-    status: "On Track",
-    progress: 65,
-    projects: [
-      { id: "p1", title: "AWS Architecture Design", status: "Done" },
-      { id: "p2", title: "Data Migration Planning", status: "Active" },
-      { id: "p3", title: "Security Compliance Review", status: "Active" },
-    ],
-  },
-  {
-    id: "2",
-    title: "Network Modernization Initiative",
-    owner: { name: "Mike R.", initials: "MR", color: "bg-amber-100 text-amber-700" },
-    status: "At Risk",
-    progress: 35,
-    projects: [
-      { id: "p4", title: "SD-WAN Evaluation", status: "Active" },
-      { id: "p5", title: "Vendor Selection", status: "Active" },
-    ],
-  },
-  {
-    id: "3",
-    title: "Security Operations Overhaul",
-    owner: { name: "Alex T.", initials: "AT", color: "bg-emerald-100 text-emerald-700" },
-    status: "On Track",
-    progress: 90,
-    projects: [
-      { id: "p6", title: "SIEM Implementation", status: "Done" },
-      { id: "p7", title: "Incident Response Playbook", status: "Done" },
-      { id: "p8", title: "Team Training", status: "Active" },
-    ],
-  },
-]
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
 
+function getAvatarColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash) + id.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+// Types
+interface EngagementStats {
+  totalRevenue: number
+  totalGP: number
+  engagementCount: number
+  workshopCount: number
+}
+
+interface UIRock {
+  id: string
+  title: string
+  status: string
+  progress: number
+  owner: { name: string; initials: string; color: string }
+  projects: { id: string; title: string; status: string }[]
+}
+
+interface UILog {
+  id: string
+  customer: string
+  type: string
+  date: string
+  revenue: number
+}
+
+// Mock data for sections not yet wired to real data
 const myTasks = [
   { id: "t1", title: "Review Acme Corp proposal", due: "Today", priority: "high", completed: false },
   { id: "t2", title: "Prepare demo environment", due: "Tomorrow", priority: "medium", completed: false },
   { id: "t3", title: "Update capacity forecast", due: "This week", priority: "low", completed: true },
-]
-
-const recentLogs = [
-  { id: "l1", customer: "Globex Inc", type: "Workshop", date: "Jan 2", revenue: 45000 },
-  { id: "l2", customer: "Acme Corp", type: "Demo", date: "Jan 1", revenue: 0 },
-  { id: "l3", customer: "Initech", type: "Advisory", date: "Dec 30", revenue: 125000 },
 ]
 
 const capacityData = {
@@ -106,12 +101,51 @@ const capacityData = {
   available: 10,
 }
 
+// Transform functions
+function transformRock(rock: RockWithProjects): UIRock {
+  const ownerName = rock.owner?.full_name || 'Unknown'
+  const ownerId = rock.owner?.id || rock.owner_id || rock.id
+
+  return {
+    id: rock.id,
+    title: rock.title,
+    status: rock.status,
+    progress: rock.progress_override ?? 0,
+    owner: {
+      name: ownerName,
+      initials: getInitials(ownerName),
+      color: getAvatarColor(ownerId),
+    },
+    projects: (rock.projects || [])
+      .filter(p => !p.deleted_at)
+      .slice(0, 5) // Limit projects shown in dashboard
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        status: p.status === 'Done' ? 'Done' : 'Active',
+      })),
+  }
+}
+
+function transformToLog(e: EngagementWithRelations): UILog {
+  return {
+    id: e.id,
+    customer: e.customer?.name || e.customer_name || 'Unknown',
+    type: e.activity_type.charAt(0).toUpperCase() + e.activity_type.slice(1).replace('_', ' '),
+    date: formatShortDate(e.date),
+    revenue: e.revenue_impact,
+  }
+}
+
 function getStatusBadge(status: string) {
   switch (status) {
+    case "on_track":
     case "On Track":
       return <Badge variant="success" className="gap-1"><CheckCircle2 className="h-3 w-3" />On Track</Badge>
+    case "at_risk":
     case "At Risk":
       return <Badge variant="warning" className="gap-1"><Clock className="h-3 w-3" />At Risk</Badge>
+    case "off_track":
     case "Off Track":
       return <Badge variant="destructive" className="gap-1">Off Track</Badge>
     default:
@@ -121,7 +155,148 @@ function getStatusBadge(status: string) {
 
 export default function VistaPage() {
   const [drawerOpen, setDrawerOpen] = React.useState(false)
-  const { activeTeam, isLoading } = useTeam()
+  const { activeTeam, isLoading: isTeamLoading } = useTeam()
+
+  // Data states
+  const [stats, setStats] = React.useState<EngagementStats | null>(null)
+  const [rocks, setRocks] = React.useState<UIRock[]>([])
+  const [recentLogs, setRecentLogs] = React.useState<UILog[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // Scorecard data (mix of real and placeholder)
+  const scorecard = React.useMemo(() => [
+    {
+      title: "Revenue Influenced",
+      value: stats?.totalRevenue ?? 0,
+      format: "currency" as const,
+      change: "this quarter",
+      icon: DollarSign,
+    },
+    {
+      title: "Engagements",
+      value: stats?.engagementCount ?? 0,
+      format: "number" as const,
+      change: "active",
+      icon: Users,
+    },
+    {
+      title: "Rock Velocity",
+      value: 72, // Placeholder - needs build signal aggregation
+      format: "percent" as const,
+      change: "avg progress",
+      icon: TrendingUp,
+    },
+    {
+      title: "Workshops Delivered",
+      value: stats?.workshopCount ?? 0,
+      format: "number" as const,
+      change: "this quarter",
+      icon: Presentation,
+    },
+  ], [stats])
+
+  const fetchData = React.useCallback(async () => {
+    if (!activeTeam) {
+      setStats(null)
+      setRocks([])
+      setRecentLogs([])
+      setIsLoadingData(false)
+      setError(null)
+      return
+    }
+
+    setIsLoadingData(true)
+    setError(null)
+    try {
+      const [statsData, rocksData, engagementsData] = await Promise.all([
+        getActiveEngagementStats(),
+        getActiveRocks(),
+        getActiveEngagements({ limit: 5 }),
+      ])
+
+      setStats(statsData)
+      setRocks(rocksData.slice(0, 3).map(transformRock))
+      setRecentLogs(engagementsData.map(transformToLog))
+    } catch (err) {
+      console.error('Failed to fetch Vista data:', err)
+      setStats(null)
+      setRocks([])
+      setRecentLogs([])
+      setError('Failed to load dashboard data. Please try again.')
+    } finally {
+      setIsLoadingData(false)
+    }
+  }, [activeTeam?.id])
+
+  React.useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const isPageLoading = isTeamLoading || isLoadingData
+
+  // Show skeleton while loading
+  if (isPageLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Vista</h1>
+              <p className="text-sm text-slate-500">Your strategic overview</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Q1 2026
+              </Button>
+              <Button variant="primary" className="gap-2" onClick={() => setDrawerOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Log Engagement
+              </Button>
+            </div>
+          </div>
+        </header>
+        <div className="p-8">
+          <VistaSkeleton />
+        </div>
+        <EngagementDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Vista</h1>
+              <p className="text-sm text-slate-500">Your strategic overview</p>
+            </div>
+          </div>
+        </header>
+        <div className="p-8">
+          <Card>
+            <CardContent className="p-0">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Failed to Load</h3>
+                <p className="text-sm text-slate-500 max-w-md mb-4">{error}</p>
+                <Button variant="outline" className="gap-2" onClick={() => fetchData()}>
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -171,7 +346,7 @@ export default function VistaPage() {
                             ? `${metric.value}%`
                             : metric.value}
                       </p>
-                      <p className="text-xs text-emerald-600 font-medium mt-1">{metric.change} this quarter</p>
+                      <p className="text-xs text-slate-400 font-medium mt-1">{metric.change}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-50">
                       <metric.icon className="h-5 w-5 text-slate-400" />
@@ -196,8 +371,19 @@ export default function VistaPage() {
               </Button>
             </Link>
             </div>
+            {rocks.length === 0 ? (
+              <Card>
+                <CardContent className="p-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <TrendingUp className="h-12 w-12 text-slate-300 mb-3" />
+                    <p className="text-sm text-slate-500">No active rocks</p>
+                    <p className="text-xs text-slate-400 mt-1">Create a rock to track strategic initiatives</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
             <div className="space-y-4">
-              {activeRocks.map((rock) => (
+              {rocks.map((rock) => (
                 <Card key={rock.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-4">
@@ -222,13 +408,14 @@ export default function VistaPage() {
                         value={rock.progress}
                         className="h-2"
                         indicatorClassName={
-                          rock.status === "At Risk" ? "bg-amber-500" :
+                          rock.status === "at_risk" || rock.status === "At Risk" ? "bg-amber-500" :
                           rock.progress >= 80 ? "bg-emerald-500" : "bg-blue-500"
                         }
                       />
                     </div>
 
                     {/* Nested Projects */}
+                    {rock.projects.length > 0 && (
                     <div className="border-t border-slate-100 pt-3">
                       <p className="text-xs font-medium text-slate-400 uppercase mb-2">Projects</p>
                       <div className="space-y-2">
@@ -246,10 +433,12 @@ export default function VistaPage() {
                         ))}
                       </div>
                     </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
             </div>
+            )}
           </div>
 
           {/* Capacity Visualization (1/3 width) */}
@@ -342,14 +531,48 @@ export default function VistaPage() {
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">My Stream</h2>
           </div>
           <Card>
-            <Tabs defaultValue="tasks" className="w-full">
+            <Tabs defaultValue="logs" className="w-full">
               <CardHeader className="pb-0">
                 <TabsList>
-                  <TabsTrigger value="tasks">My Tasks</TabsTrigger>
                   <TabsTrigger value="logs">Recent Logs</TabsTrigger>
+                  <TabsTrigger value="tasks">My Tasks</TabsTrigger>
                 </TabsList>
               </CardHeader>
               <CardContent className="pt-4">
+                <TabsContent value="logs" className="mt-0">
+                  {recentLogs.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Users className="h-12 w-12 text-slate-300 mb-3" />
+                      <p className="text-sm text-slate-500">No recent engagements</p>
+                      <p className="text-xs text-slate-400 mt-1">Log an engagement to see it here</p>
+                    </div>
+                  ) : (
+                  <div className="space-y-3">
+                    {recentLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-slate-50">
+                            <Users className="h-4 w-4 text-slate-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{log.customer}</p>
+                            <p className="text-xs text-slate-500">{log.type} • {log.date}</p>
+                          </div>
+                        </div>
+                        {log.revenue > 0 && (
+                          <span className="text-sm font-semibold text-emerald-600">
+                            {formatCompactCurrency(log.revenue)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  )}
+                </TabsContent>
+
                 <TabsContent value="tasks" className="mt-0">
                   <div className="space-y-3">
                     {myTasks.map((task) => (
@@ -383,32 +606,6 @@ export default function VistaPage() {
                     ))}
                   </div>
                 </TabsContent>
-
-                <TabsContent value="logs" className="mt-0">
-                  <div className="space-y-3">
-                    {recentLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-slate-50">
-                            <Users className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-900">{log.customer}</p>
-                            <p className="text-xs text-slate-500">{log.type} • {log.date}</p>
-                          </div>
-                        </div>
-                        {log.revenue > 0 && (
-                          <span className="text-sm font-semibold text-emerald-600">
-                            {formatCompactCurrency(log.revenue)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
               </CardContent>
             </Tabs>
           </Card>
@@ -424,7 +621,11 @@ export default function VistaPage() {
       </button>
 
       {/* Engagement Drawer */}
-      <EngagementDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+      <EngagementDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onSave={() => fetchData()}
+      />
     </div>
   )
 }

@@ -715,5 +715,74 @@ Fixed critical authentication and authorization issues preventing user login and
 | Phase 8: Security Hardening | ✅ Complete | |
 | Phase 9: UI Polish & Performance | ✅ Complete | |
 | Phase 10: Auth & Middleware | ✅ Complete | |
+| Phase 11: Vista Real Data + Skeleton | ✅ Complete | |
+
+---
+
+## Phase 11: Vista Real Data + Skeleton Loading (2026-01-06)
+
+Two implementation tracks for better dashboard experience.
+
+### Track A: Wire Vista to Real Data
+
+The Vista dashboard (`src/app/page.tsx`) was using hardcoded mock data. Now wired to real server actions.
+
+#### Data Now Live
+| Section | Server Action | Status |
+|---------|---------------|--------|
+| Revenue Influenced | `getActiveEngagementStats()` | ✅ Live |
+| Engagements count | `getActiveEngagementStats()` | ✅ Live |
+| Workshops Delivered | `getActiveEngagementStats()` | ✅ Live |
+| Active Rocks | `getActiveRocks()` | ✅ Live |
+| Recent Logs | `getActiveEngagements({ limit: 5 })` | ✅ Live |
+| Rock Velocity | N/A | Mock (needs build signal aggregation) |
+| My Tasks | N/A | Mock (tasks not fully implemented) |
+| My Capacity | N/A | Mock (needs capacity calculation RPC) |
+
+#### Implementation Details
+- Added `fetchData()` with `useCallback` pattern
+- Data fetched in parallel with `Promise.all()`
+- Transform functions convert server types to UI types
+- Empty states for sections with no data
+- Refresh on team switch via `activeTeam?.id` dependency
+
+### Track B: Skeleton Loading Components
+
+Added content-shaped skeleton loading for better perceived performance.
+
+#### Files Created
+| File | Purpose |
+|------|---------|
+| `src/components/ui/skeleton.tsx` | Base skeleton component using `animate-pulse` |
+| `src/components/vista/vista-skeleton.tsx` | Vista-specific skeleton components |
+
+#### Skeleton Components
+- `ScorecardSkeleton` - 4 scorecard card placeholders
+- `RockCardSkeleton` - Single rock card with projects
+- `ActiveRocksSkeleton` - 3 rock card skeletons
+- `CapacitySkeleton` - Capacity jar placeholder
+- `RecentLogsSkeleton` - 3 log row skeletons
+- `TasksSkeleton` - 3 task row skeletons
+- `VistaSkeleton` - Full page skeleton composition
+
+#### Integration
+- Vista page shows skeleton while `isPageLoading` is true
+- Error state shows retry button when fetch fails
+- Distinguishes between "no data" and "fetch failed"
+
+### Files Modified
+- `src/app/page.tsx` - Replaced mock data with server actions, added skeleton loading
+
+### What's NOT Included (Future Work)
+- "My Tasks" section - Tasks entity needs full implementation
+- "My Capacity" calculation - Needs capacity calculation RPC
+- "Rock Velocity" metric - Needs build signal aggregation RPC
+- Skeletons for Stream/Rocks/Reports pages (optional enhancement)
+
+---
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 11: Vista Real Data + Skeleton Loading | ✅ Complete | Dashboard now uses real data |
 
 **All phases complete! Application is fully functional.**
