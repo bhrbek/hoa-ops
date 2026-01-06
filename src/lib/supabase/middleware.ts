@@ -41,6 +41,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  console.log('[middleware]', request.nextUrl.pathname, 'user:', user?.email || 'none')
+
   // Protect all routes except login and public routes
   if (
     !user &&
@@ -48,6 +50,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/auth')
   ) {
     // Redirect to login page
+    console.log('[middleware] No user, redirecting to /login')
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
