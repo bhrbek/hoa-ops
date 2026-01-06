@@ -53,7 +53,9 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
   if (!profile) return null
 
   // Get team memberships with team and org info
-  const { data: memberships } = await (supabase as any)
+  console.log('[auth] getCurrentUserWithRoles: querying for user.id =', user.id)
+
+  const { data: memberships, error: membershipsError } = await (supabase as any)
     .from('team_memberships')
     .select(`
       id,
@@ -68,13 +70,25 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     .eq('user_id', user.id)
     .is('deleted_at', null)
 
+  console.log('[auth] memberships query result:', {
+    count: memberships?.length,
+    error: membershipsError?.message,
+    data: memberships
+  })
+
   // Get orgs where user is admin
-  const { data: adminOrgs } = await (supabase as any)
+  const { data: adminOrgs, error: adminOrgsError } = await (supabase as any)
     .from('org_admins')
     .select(`
       org:orgs(id, name, slug)
     `)
     .eq('user_id', user.id)
+
+  console.log('[auth] adminOrgs query result:', {
+    count: adminOrgs?.length,
+    error: adminOrgsError?.message,
+    data: adminOrgs
+  })
 
   // Build teams array with roles
   const teams = (memberships || []).map((m: any) => ({
