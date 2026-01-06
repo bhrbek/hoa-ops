@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Calendar, TrendingUp, DollarSign, Users, Presentation, ChevronRight, CheckCircle2, Circle, Plus, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatCompactCurrency } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
+import { useTeam } from "@/contexts/team-context"
 
 // Mock data
 const scorecard = [
@@ -119,6 +121,7 @@ function getStatusBadge(status: string) {
 
 export default function VistaPage() {
   const [drawerOpen, setDrawerOpen] = React.useState(false)
+  const { activeTeam, isLoading } = useTeam()
 
   return (
     <div className="min-h-screen bg-white">
@@ -127,7 +130,12 @@ export default function VistaPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Vista</h1>
-            <p className="text-sm text-slate-500">Your strategic overview</p>
+            <p className="text-sm text-slate-500">
+              Your strategic overview
+              {activeTeam && (
+                <span className="ml-2 text-slate-400">({activeTeam.name})</span>
+              )}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm" className="gap-2">
@@ -182,9 +190,11 @@ export default function VistaPage() {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Active Rocks</h2>
+              <Link href="/climb">
               <Button variant="ghost" size="sm" className="text-blue-600 gap-1">
                 View All <ChevronRight className="h-4 w-4" />
               </Button>
+            </Link>
             </div>
             <div className="space-y-4">
               {activeRocks.map((rock) => (

@@ -21,10 +21,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useTeam } from "@/contexts/team-context"
+import type { Rock } from "@/types/supabase"
 
 interface CreateRockDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSave?: (data: CreateRockData) => Promise<void>
+}
+
+interface CreateRockData {
+  team_id: string
+  title: string
+  owner_id: string
+  quarter: string
+  perfect_outcome: string
+  worst_outcome?: string
 }
 
 const quarters = [
@@ -34,34 +47,58 @@ const quarters = [
   { value: "Q4 2026", label: "Q4 2026" },
 ]
 
-const owners = [
-  { value: "sarah", name: "Sarah J.", initials: "SJ" },
-  { value: "mike", name: "Mike R.", initials: "MR" },
-  { value: "alex", name: "Alex T.", initials: "AT" },
-  { value: "david", name: "David K.", initials: "DK" },
-]
+function getInitials(name: string): string {
+  const parts = name.split(" ")
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
 
-export function CreateRockDialog({ open, onOpenChange }: CreateRockDialogProps) {
+export function CreateRockDialog({ open, onOpenChange, onSave }: CreateRockDialogProps) {
+  const { activeTeam, teamMembers, isLoading: isLoadingTeam } = useTeam()
+
   const [title, setTitle] = React.useState("")
   const [owner, setOwner] = React.useState("")
   const [quarter, setQuarter] = React.useState("Q1 2026")
   const [perfectOutcome, setPerfectOutcome] = React.useState("")
+  const [worstOutcome, setWorstOutcome] = React.useState("")
+  const [isSaving, setIsSaving] = React.useState(false)
 
-  const isValid = title.trim() && owner && perfectOutcome.trim()
+  const isValid = title.trim() && owner && perfectOutcome.trim() && activeTeam
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValid) return
+    if (!isValid || !activeTeam) return
 
-    // TODO: Save to database
-    console.log({ title, owner, quarter, perfectOutcome })
+    setIsSaving(true)
 
-    // Reset and close
-    setTitle("")
-    setOwner("")
-    setQuarter("Q1 2026")
-    setPerfectOutcome("")
-    onOpenChange(false)
+    const data: CreateRockData = {
+      team_id: activeTeam.id,
+      title,
+      owner_id: owner,
+      quarter,
+      perfect_outcome: perfectOutcome,
+      worst_outcome: worstOutcome || undefined,
+    }
+
+    try {
+      if (onSave) {
+        await onSave(data)
+      }
+
+      // Reset and close
+      setTitle("")
+      setOwner("")
+      setQuarter("Q1 2026")
+      setPerfectOutcome("")
+      setWorstOutcome("")
+      onOpenChange(false)
+    } catch (error) {
+      console.error("Failed to create rock:", error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -102,11 +139,27 @@ export function CreateRockDialog({ open, onOpenChange }: CreateRockDialogProps) 
                   <SelectValue placeholder="Select owner" />
                 </SelectTrigger>
                 <SelectContent>
-                  {owners.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
+                  {isLoadingTeam ? (
+                    <div className="py-2 px-3 text-sm text-slate-500">Loading...</div>
+                  ) : teamMembers.length === 0 ? (
+                    <div className="py-2 px-3 text-sm text-slate-500">No team members</div>
+                  ) : (
+                    teamMembers.map((membership) => (
+                      <SelectItem key={membership.user_id} value={membership.user_id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback className="text-[10px] bg-slate-100 text-slate-600">
+                              {getInitials(membership.user.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{membership.user.full_name}</span>
+                          {membership.role === "manager" && (
+                            <span className="text-xs text-slate-400">(Manager)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -145,12 +198,26 @@ export function CreateRockDialog({ open, onOpenChange }: CreateRockDialogProps) 
             </p>
           </div>
 
+          {/* Worst Outcome (optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="rock-worst-outcome">
+              Worst Outcome <span className="text-slate-400">(optional)</span>
+            </Label>
+            <Textarea
+              id="rock-worst-outcome"
+              placeholder="What does failure look like? This helps identify risks early."
+              value={worstOutcome}
+              onChange={(e) => setWorstOutcome(e.target.value)}
+              rows={2}
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={!isValid}>
-              Create Rock
+            <Button type="submit" variant="primary" disabled={!isValid || isSaving}>
+              {isSaving ? "Creating..." : "Create Rock"}
             </Button>
           </DialogFooter>
         </form>

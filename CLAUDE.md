@@ -1,0 +1,248 @@
+# THE JAR – SYSTEM CONTRACT FOR CLAUDE
+
+You are building an Enterprise Operating System (EOS-inspired) application for a Pre-Sales Technical Solutions Architect (TSA) organization.
+
+This system is NOT:
+- A CRM
+- A task manager
+- A customer delivery tracker
+- A gamified productivity tool
+
+This system IS:
+- A strategy execution system (Rocks & Projects)
+- A business observability system (Engagement intelligence)
+- A capacity-constrained operating model
+
+Failure to respect these constraints is a functional bug.
+
+---
+
+## CORE PHILOSOPHY (NON-NEGOTIABLE)
+
+### 1. Engagements Are Sand
+- Engagements are ever-present and unavoidable.
+- Engagements are NOT strategic.
+- Engagements NEVER affect Rock health.
+- Engagements exist to observe business reality and trends.
+
+### 2. Rocks Represent Capability Creation
+- A Rock is a quarterly commitment to create or materially improve a capability.
+- Every Rock MUST define a Perfect Outcome (max 3 sentences).
+- Rock success is binary: the capability exists or it does not.
+
+### 3. Rock Health Comes ONLY From Build Signals
+- Rock health is derived from Build Signals (measurable outcomes).
+- Revenue, GP, engagement count, or velocity MUST NEVER change Rock health.
+- A Rock with missed Build Signals is unhealthy, regardless of business performance.
+
+### 4. Projects Are Internal Capability-Build Efforts
+- Projects are not customer delivery.
+- Projects exist to produce the Rock's Perfect Outcome.
+- Projects MUST have:
+  - Owner
+  - Timeline
+  - Milestones
+  - Status
+
+### 5. Commitments Drive Weekly Execution
+- Commitments MUST link to a Project (required)
+- Commitments MUST link to a Build Signal (required)
+- Commitments NEVER link to Engagements
+- Finishable in ≤7 days with binary "Done means..." definition
+
+### 6. Capacity Physics Is Enforced
+- 20% of weekly capacity is reserved for Water (admin/internal noise).
+- This allocation is fixed and cannot be configured away.
+- The UI must visually enforce capacity limits.
+
+---
+
+## UI PRINCIPLES
+
+- Visual clarity over density
+- No dark mode
+- No gamification
+- No vanity metrics
+- Professional, clean, "field guide" aesthetic ("Glacier Modern")
+
+---
+
+## REPORTING SEPARATION
+
+There are two distinct lenses that MUST NOT be merged:
+
+### Strategy Execution Lens
+- Rocks
+- Build Signals
+- Projects
+- Commitments
+- Capacity (The Jar)
+
+### Business Observability Lens
+- Engagement trends
+- OEM involvement and pairings
+- Domains and innovation themes
+- Influenced revenue and GP
+- Velocity and deal shape
+
+Do NOT infer strategy success from business outcomes inside Rock logic.
+
+---
+
+## MULTI-TEAM ARCHITECTURE (HEADWATERS)
+
+### Hierarchy
+- Organizations contain Teams
+- Teams contain: Rocks, Projects, Engagements, Commitments, Assets
+- Customers are ORG-SCOPED (shared across all teams in org)
+
+### Roles
+- **Org Admin:** Full access to all teams, manage org settings
+- **Manager:** Manage team, create Rocks, set Beacons
+- **TSA:** Log engagements, manage commitments, edit any team engagement
+
+### Soft Delete Only
+All primary tables use soft delete (`deleted_at`, `deleted_by`). No hard deletes.
+
+---
+
+## SUPABASE CLI WORKFLOW
+
+### Project Details
+- **Project Ref:** pstevmcaxrqalafoyxmy
+- **Region:** East US (North Virginia)
+
+### Check if Linked
+```bash
+supabase projects list
+```
+Look for `●` next to "The Jar".
+
+### Running Migrations
+
+Check status:
+```bash
+supabase migration list --linked
+```
+
+Push new migrations:
+```bash
+supabase db push --linked
+```
+
+### If Old Migrations Fail (tables already exist)
+Mark them as applied:
+```bash
+supabase migration repair 001 002 003 --status applied --linked
+```
+
+### Common Issues
+
+1. **"relation already exists"** - Mark migration as applied:
+   ```bash
+   supabase migration repair XXX --status applied --linked
+   ```
+
+2. **"cannot change name of input parameter"** - Drop function first:
+   ```sql
+   DROP FUNCTION IF EXISTS function_name(param_types) CASCADE;
+   ```
+
+3. **"uuid_generate_v4() does not exist"** - Use `gen_random_uuid()` instead
+
+4. **"cannot drop function because other objects depend on it"** - Add CASCADE:
+   ```sql
+   DROP FUNCTION IF EXISTS function_name(uuid) CASCADE;
+   ```
+
+### Inspecting the Database
+```bash
+supabase inspect db table-stats --linked
+```
+
+### DO NOT USE
+- `psql` direct connection (often fails with pooler issues)
+- `supabase db execute` (command doesn't exist)
+
+### Migration File Naming
+Format: `XXX_description.sql` where XXX is 3-digit number (001, 002, etc.)
+
+---
+
+## FAILURE MODES TO PREVENT
+
+- Treating engagement volume as progress
+- Allowing Rocks without Build Signals
+- Allowing Commitments without Project + Build Signal links
+- Allowing revenue metrics to influence Rock health
+- Overbooking capacity beyond the Jar
+- Hard deleting any primary table records
+- Making Customers team-scoped (they are org-scoped!)
+
+If unsure, default to enforcing discipline over flexibility.
+
+---
+
+## CURRENT ARCHITECTURE
+
+### Key Directories
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── actions/           # Server actions (Phase 3)
+│   ├── auth/              # Auth callback
+│   ├── climb/             # Strategy execution (Rocks/Projects)
+│   ├── commitment-board/  # Weekly commitments
+│   ├── login/             # Authentication
+│   ├── reports/           # Business observability
+│   └── stream/            # Engagements
+├── components/
+│   ├── climb/             # Rock/Project dialogs
+│   ├── shell/             # Layout (sidebar, app-shell, team-selector)
+│   ├── stream/            # Engagement drawer, asset selector
+│   └── ui/                # shadcn/ui components
+├── contexts/
+│   └── team-context.tsx   # Team switching, user roles
+├── lib/
+│   └── supabase/          # Supabase client (client/server/middleware)
+└── types/
+    └── supabase.ts        # All TypeScript types
+```
+
+### Key Imports for UI Components
+```typescript
+// Team context (provides active team, user, members)
+import { useTeam } from "@/contexts/team-context"
+
+// Server actions
+import { getActiveTeam, getCurrentUserWithRoles } from '@/app/actions/auth'
+import { getTeamMembers, switchTeam } from '@/app/actions/teams'
+import { getActiveRocks } from '@/app/actions/rocks'
+import { getActiveEngagements } from '@/app/actions/engagements'
+import { getAssets } from '@/app/actions/assets'
+```
+
+### UI Routes
+| Route | View | Purpose |
+|-------|------|---------|
+| `/` | Vista | Dashboard overview |
+| `/stream` | Stream | Engagement logging |
+| `/climb` | Climb | Rocks & Projects |
+| `/commitment-board` | Commitments | Weekly execution |
+| `/reports` | Reports | Business observability |
+| `/login` | Login | Authentication |
+
+### Team Context Provides
+```typescript
+{
+  activeTeam: Team | null
+  activeOrg: Org | null
+  currentRole: TeamRole | null  // 'manager' | 'tsa'
+  isOrgAdmin: boolean
+  user: Profile & { email: string } | null
+  teamMembers: TeamMembershipWithUser[]
+  availableTeams: (Team & { role, org })[]
+  switchTeam: (teamId) => Promise<void>
+  refreshTeamData: () => Promise<void>
+}
+```

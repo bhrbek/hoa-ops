@@ -22,6 +22,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
+import { useTeam } from "@/contexts/team-context"
 
 // Mock data
 const rocks = [
@@ -199,6 +200,7 @@ function getGanttPosition(startDate: string, endDate: string) {
 
 export default function ClimbPage() {
   const [expandedRocks, setExpandedRocks] = React.useState<string[]>(["1"])
+  const { activeTeam, isLoading } = useTeam()
 
   const toggleRock = (rockId: string) => {
     setExpandedRocks((prev) =>
@@ -217,10 +219,15 @@ export default function ClimbPage() {
             <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider mb-1">
               <Calendar className="h-4 w-4" />
               Q1 2026
+              {activeTeam && (
+                <span className="ml-2 text-slate-400 font-normal normal-case">
+                  ({activeTeam.name})
+                </span>
+              )}
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Climb</h1>
             <p className="text-sm text-slate-500">
-              Track your quarterly Rocks, supporting projects, and evidence.
+              Track your quarterly Rocks, supporting projects, and Build Signals.
             </p>
           </div>
           <div className="flex items-center gap-3">

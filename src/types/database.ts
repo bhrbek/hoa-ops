@@ -1,51 +1,59 @@
-export interface UserProfile {
-  id: string
-  full_name: string
-  avatar_url: string
-  capacity_hours: number // Default 40
-}
+// Re-export all types from supabase.ts for backwards compatibility
+// New code should import directly from '@/types/supabase'
 
-export interface Rock {
-  id: string
-  title: string
-  owner_id: string
-  quarter: string // "Q1 2026"
-  status: 'On Track' | 'Off Track' | 'At Risk' | 'Done'
-  perfect_outcome: string
-  progress_percent: number // Auto-calculated or manual override
-  projects?: Project[] // Hydrated children
-}
+import type { Profile as ProfileType } from './supabase'
 
-export interface Project {
-  id: string
-  rock_id: string
-  title: string
-  owner_id: string
-  start_date: string
-  end_date: string
-  status: 'Active' | 'Done'
-  estimated_hours: number
-}
+export {
+  // Enums
+  type TeamRole,
+  type RockStatus,
+  type ProjectStatus,
+  type TaskPriority,
+  type ActivityType,
+  type BuildSignalStatus,
+  type CommitmentStatus,
+  type CustomerStatus,
+  type AssetStatus,
+  type MilestoneStatus,
 
-export interface Engagement {
-  id: string
-  customer_name: string
-  date: string
-  activity_type: 'Workshop' | 'Demo' | 'POC' | 'Advisory'
-  revenue_impact: number
-  gp_impact: number
-  domains: string[] // ["Wi-Fi", "SD-WAN"]
-  oems: string[] // ["Cisco", "Arista"]
-  rock_id?: string // The "Evidence" Link
-  notes: string
-}
+  // Core types
+  type Profile,
+  type Org,
+  type Team,
+  type TeamMembership,
+  type OrgAdmin,
+  type Domain,
+  type OEM,
+  type Customer,
+  type Rock,
+  type BuildSignal,
+  type Project,
+  type Milestone,
+  type Task,
+  type Commitment,
+  type Engagement,
+  type Asset,
+  type EnablementEvent,
+  type AuditLog,
 
-export interface Domain {
-  id: string
-  name: string
-}
+  // Extended types
+  type RockWithProjects,
+  type RockWithBuildSignals,
+  type RockWithAll,
+  type ProjectWithTasks,
+  type ProjectWithMilestones,
+  type ProjectWithAll,
+  type CommitmentWithRelations,
+  type EngagementWithRelations,
+  type TeamWithOrg,
+  type TeamWithMembers,
+  type UserWithRoles,
+  type ActiveTeamContext,
 
-export interface OEM {
-  id: string
-  name: string
-}
+  // Carryover types
+  type CarryoverAction,
+  type CommitmentCarryover,
+} from './supabase'
+
+// Legacy type aliases for backwards compatibility
+export type UserProfile = ProfileType

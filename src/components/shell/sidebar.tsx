@@ -3,11 +3,12 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Mountain, Waves, TrendingUp, LayoutDashboard, Settings, LogOut } from "lucide-react"
+import { Mountain, Waves, TrendingUp, LayoutDashboard, Settings, ClipboardList, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { TeamSelector } from "@/components/shell/team-selector"
+import { useTeam } from "@/contexts/team-context"
 
 const navItems = [
   {
@@ -28,27 +29,39 @@ const navItems = [
     icon: TrendingUp,
     description: "Strategy",
   },
+  {
+    title: "Commitments",
+    href: "/commitment-board",
+    icon: ClipboardList,
+    description: "Weekly",
+  },
+  {
+    title: "Reports",
+    href: "/reports",
+    icon: BarChart3,
+    description: "Analytics",
+  },
 ]
 
 interface SidebarProps {
-  user?: {
-    name: string
-    email: string
-    avatar?: string
-    initials: string
-  }
   capacityPercent?: number
 }
 
 export function Sidebar({
-  user = {
-    name: "Sarah Jenkins",
-    email: "sarah@company.com",
-    initials: "SJ"
-  },
   capacityPercent = 80
 }: SidebarProps) {
   const pathname = usePathname()
+  const { user, isLoading } = useTeam()
+
+  // Get initials from user's full name
+  const userInitials = React.useMemo(() => {
+    if (!user?.full_name) return "??"
+    const parts = user.full_name.split(" ")
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    }
+    return user.full_name.slice(0, 2).toUpperCase()
+  }, [user?.full_name])
 
   return (
     <aside className="flex h-screen w-[280px] flex-col bg-slate-50 border-r border-slate-200">
@@ -63,8 +76,13 @@ export function Sidebar({
         </div>
       </div>
 
+      {/* Team Selector */}
+      <div className="py-3 border-b border-slate-200">
+        <TeamSelector />
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -150,21 +168,36 @@ export function Sidebar({
 
       {/* User Profile Footer */}
       <div className="p-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9 border-2 border-white shadow-sm">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
-              {user.initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-900 truncate">{user.name}</p>
-            <p className="text-xs text-slate-500 truncate">{user.email}</p>
+        {isLoading ? (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-slate-200 animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
+              <div className="h-3 w-32 bg-slate-200 rounded animate-pulse" />
+            </div>
           </div>
-          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-            <Settings className="h-4 w-4" />
-          </button>
-        </div>
+        ) : user ? (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9 border-2 border-white shadow-sm">
+              <AvatarImage src={user.avatar_url || undefined} alt={user.full_name} />
+              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-900 truncate">{user.full_name}</p>
+              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+            </div>
+            <Link
+              href="/settings"
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500 text-center">Not signed in</div>
+        )}
       </div>
     </aside>
   )

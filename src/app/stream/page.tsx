@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
+import { useTeam } from "@/contexts/team-context"
 
 // Mock engagement data
 const engagements = [
@@ -106,8 +107,9 @@ function getDomainBadgeVariant(domain: string) {
 }
 
 export default function StreamPage() {
-  const [drawerOpen, setDrawerOpen] = React.useState(true) // Open by default as requested
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const { activeTeam, isLoading } = useTeam()
 
   const filteredEngagements = engagements.filter(
     (e) =>
@@ -124,7 +126,10 @@ export default function StreamPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Stream</h1>
             <p className="text-sm text-slate-500">
-              Track and manage engagement activities, monitor milestones, and analyze revenue impact.
+              Track and manage engagement activities
+              {activeTeam && (
+                <span className="ml-2 text-slate-400">({activeTeam.name})</span>
+              )}
             </p>
           </div>
           <Button variant="primary" className="gap-2" onClick={() => setDrawerOpen(true)}>

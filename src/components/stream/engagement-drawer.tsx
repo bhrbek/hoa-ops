@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Search, DollarSign, Link2 } from "lucide-react"
+import { X, Search, DollarSign, Link2, User, Clock } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -22,111 +22,223 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { AssetSelector } from "@/components/stream/asset-selector"
+import { useTeam } from "@/contexts/team-context"
+import type { Domain, OEM, Rock, Asset, Engagement } from "@/types/supabase"
 
 interface EngagementDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  engagement?: Engagement & {
+    owner?: { full_name: string } | null
+    last_editor?: { full_name: string } | null
+  }
+  onSave?: (data: EngagementFormData) => Promise<void>
+}
+
+interface EngagementFormData {
+  customer_name: string
+  date: string
+  activity_type: "Workshop" | "Demo" | "POC" | "Advisory"
+  revenue_impact: number
+  gp_impact: number
+  notes: string
+  rock_id: string | null
+  domain_ids: string[]
+  oem_ids: string[]
+  asset_ids: string[]
 }
 
 const activityTypes = [
-  { value: "workshop", label: "Workshop" },
-  { value: "demo", label: "Demo" },
-  { value: "poc", label: "POC" },
-  { value: "advisory", label: "Advisory" },
-]
+  { value: "Workshop", label: "Workshop" },
+  { value: "Demo", label: "Demo" },
+  { value: "POC", label: "POC" },
+  { value: "Advisory", label: "Advisory" },
+] as const
 
-const domains = [
-  { id: "1", name: "Cloud", color: "primary" },
-  { id: "2", name: "Security", color: "security" },
-  { id: "3", name: "Network", color: "network" },
-  { id: "4", name: "Wi-Fi 7", color: "cloud" },
-  { id: "5", name: "SD-WAN", color: "infra" },
-]
+export function EngagementDrawer({
+  open,
+  onOpenChange,
+  engagement,
+  onSave,
+}: EngagementDrawerProps) {
+  const { activeTeam } = useTeam()
 
-const oems = [
-  { id: "1", name: "Cisco" },
-  { id: "2", name: "Arista" },
-  { id: "3", name: "Palo Alto" },
-  { id: "4", name: "AWS" },
-  { id: "5", name: "Azure" },
-  { id: "6", name: "Fortinet" },
-  { id: "7", name: "Juniper" },
-]
+  // Form state
+  const [customerSearch, setCustomerSearch] = React.useState(engagement?.customer_name || "")
+  const [activityType, setActivityType] = React.useState<string>(engagement?.activity_type || "Workshop")
+  const [date, setDate] = React.useState(
+    engagement?.date || new Date().toISOString().split("T")[0]
+  )
+  const [selectedDomains, setSelectedDomains] = React.useState<string[]>([])
+  const [selectedOems, setSelectedOems] = React.useState<string[]>([])
+  const [selectedAssets, setSelectedAssets] = React.useState<string[]>([])
+  const [linkedRock, setLinkedRock] = React.useState<string>(engagement?.rock_id || "")
+  const [revenue, setRevenue] = React.useState(engagement?.revenue_impact?.toString() || "")
+  const [gp, setGp] = React.useState(engagement?.gp_impact?.toString() || "")
+  const [notes, setNotes] = React.useState(engagement?.notes || "")
+  const [isSaving, setIsSaving] = React.useState(false)
 
-const activeRocks = [
-  { id: "1", title: "Q1 Enterprise Cloud Migration" },
-  { id: "2", title: "Network Modernization Initiative" },
-  { id: "3", title: "Security Operations Overhaul" },
-]
+  // Data from server
+  const [domains, setDomains] = React.useState<Domain[]>([])
+  const [oems, setOems] = React.useState<OEM[]>([])
+  const [rocks, setRocks] = React.useState<Rock[]>([])
+  const [assets, setAssets] = React.useState<Asset[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(true)
 
-export function EngagementDrawer({ open, onOpenChange }: EngagementDrawerProps) {
-  const [selectedDomains, setSelectedDomains] = React.useState<string[]>(["Cloud"])
-  const [selectedOems, setSelectedOems] = React.useState<string[]>(["AWS"])
-  const [customerSearch, setCustomerSearch] = React.useState("")
-  const [activityType, setActivityType] = React.useState("workshop")
-  const [linkedRock, setLinkedRock] = React.useState<string>("")
-  const [revenue, setRevenue] = React.useState("")
-  const [gp, setGp] = React.useState("")
-  const [notes, setNotes] = React.useState("")
+  // Load reference data when drawer opens
+  React.useEffect(() => {
+    if (open && activeTeam) {
+      loadReferenceData()
+    }
+  }, [open, activeTeam?.id])
 
-  const toggleDomain = (domain: string) => {
-    setSelectedDomains(prev =>
-      prev.includes(domain)
-        ? prev.filter(d => d !== domain)
-        : [...prev, domain]
-    )
-  }
+  async function loadReferenceData() {
+    setIsLoadingData(true)
+    try {
+      const [
+        { getDomains, getOEMs },
+        { getActiveRocks },
+        { getAssets },
+      ] = await Promise.all([
+        import("@/app/actions/reference"),
+        import("@/app/actions/rocks"),
+        import("@/app/actions/assets"),
+      ])
 
-  const toggleOem = (oem: string) => {
-    setSelectedOems(prev =>
-      prev.includes(oem)
-        ? prev.filter(o => o !== oem)
-        : [...prev, oem]
-    )
-  }
+      const [domainsData, oemsData, rocksData, assetsData] = await Promise.all([
+        getDomains(),
+        getOEMs(),
+        activeTeam ? getActiveRocks(activeTeam.id) : Promise.resolve([]),
+        activeTeam ? getAssets(activeTeam.id) : Promise.resolve([]),
+      ])
 
-  const handleSave = (andLogAnother: boolean) => {
-    // TODO: Save engagement to database
-    console.log({
-      customer: customerSearch,
-      activityType,
-      domains: selectedDomains,
-      oems: selectedOems,
-      revenue: parseFloat(revenue) || 0,
-      gp: parseFloat(gp) || 0,
-      linkedRock,
-      notes,
-    })
-
-    if (andLogAnother) {
-      // Reset form
-      setCustomerSearch("")
-      setActivityType("workshop")
-      setSelectedDomains([])
-      setSelectedOems([])
-      setRevenue("")
-      setGp("")
-      setLinkedRock("")
-      setNotes("")
-    } else {
-      onOpenChange(false)
+      setDomains(domainsData)
+      setOems(oemsData)
+      setRocks(rocksData)
+      setAssets(assetsData)
+    } catch (error) {
+      console.error("Failed to load reference data:", error)
+    } finally {
+      setIsLoadingData(false)
     }
   }
+
+  // Reset form when engagement changes
+  React.useEffect(() => {
+    if (engagement) {
+      setCustomerSearch(engagement.customer_name)
+      setActivityType(engagement.activity_type)
+      setDate(engagement.date)
+      setLinkedRock(engagement.rock_id || "")
+      setRevenue(engagement.revenue_impact?.toString() || "")
+      setGp(engagement.gp_impact?.toString() || "")
+      setNotes(engagement.notes || "")
+    } else {
+      resetForm()
+    }
+  }, [engagement])
+
+  function resetForm() {
+    setCustomerSearch("")
+    setActivityType("Workshop")
+    setDate(new Date().toISOString().split("T")[0])
+    setSelectedDomains([])
+    setSelectedOems([])
+    setSelectedAssets([])
+    setLinkedRock("")
+    setRevenue("")
+    setGp("")
+    setNotes("")
+  }
+
+  const toggleDomain = (domainId: string) => {
+    setSelectedDomains((prev) =>
+      prev.includes(domainId)
+        ? prev.filter((d) => d !== domainId)
+        : [...prev, domainId]
+    )
+  }
+
+  const toggleOem = (oemId: string) => {
+    setSelectedOems((prev) =>
+      prev.includes(oemId) ? prev.filter((o) => o !== oemId) : [...prev, oemId]
+    )
+  }
+
+  const handleSave = async (andLogAnother: boolean) => {
+    if (!customerSearch.trim()) return
+
+    setIsSaving(true)
+
+    const formData: EngagementFormData = {
+      customer_name: customerSearch,
+      date,
+      activity_type: activityType as "Workshop" | "Demo" | "POC" | "Advisory",
+      revenue_impact: parseFloat(revenue) || 0,
+      gp_impact: parseFloat(gp) || 0,
+      notes,
+      rock_id: linkedRock || null,
+      domain_ids: selectedDomains,
+      oem_ids: selectedOems,
+      asset_ids: selectedAssets,
+    }
+
+    try {
+      if (onSave) {
+        await onSave(formData)
+      }
+
+      if (andLogAnother) {
+        resetForm()
+      } else {
+        onOpenChange(false)
+      }
+    } catch (error) {
+      console.error("Failed to save engagement:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const isEditing = !!engagement
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
-          <SheetTitle>Log New Engagement</SheetTitle>
+          <SheetTitle>{isEditing ? "Edit Engagement" : "Log New Engagement"}</SheetTitle>
           <SheetDescription>
-            Capture field intelligence from your customer interaction.
+            {isEditing
+              ? "Update the details of this customer interaction."
+              : "Capture field intelligence from your customer interaction."}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-6 space-y-6">
+          {/* Creator/Editor Info (for existing engagements) */}
+          {isEditing && engagement && (
+            <div className="flex items-center gap-4 text-xs text-slate-500 pb-4 border-b border-slate-100">
+              {engagement.owner && (
+                <div className="flex items-center gap-1.5">
+                  <User className="h-3 w-3" />
+                  <span>Created by {engagement.owner.full_name}</span>
+                </div>
+              )}
+              {engagement.last_editor && engagement.last_edited_at && (
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  <span>Edited by {engagement.last_editor.full_name}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Context Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Context</h3>
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Context
+            </h3>
 
             {/* Customer Search */}
             <div className="space-y-2">
@@ -149,7 +261,8 @@ export function EngagementDrawer({ open, onOpenChange }: EngagementDrawerProps) 
               <Input
                 id="date"
                 type="date"
-                defaultValue={new Date().toISOString().split('T')[0]}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
               />
             </div>
 
@@ -173,70 +286,103 @@ export function EngagementDrawer({ open, onOpenChange }: EngagementDrawerProps) 
 
           {/* Tech Stack Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tech Stack</h3>
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Tech Stack
+            </h3>
 
             {/* Domains */}
             <div className="space-y-2">
               <Label>Domains</Label>
-              <div className="flex flex-wrap gap-2">
-                {domains.map((domain) => (
-                  <button
-                    key={domain.id}
-                    onClick={() => toggleDomain(domain.name)}
-                    className="focus:outline-none"
-                  >
-                    <Badge
-                      variant={selectedDomains.includes(domain.name) ? "primary" : "outline"}
-                      className={`cursor-pointer transition-all ${
-                        selectedDomains.includes(domain.name)
-                          ? "ring-2 ring-blue-200"
-                          : "hover:bg-slate-50"
-                      }`}
+              {isLoadingData ? (
+                <div className="flex gap-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-6 w-16 bg-slate-100 rounded animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {domains.map((domain) => (
+                    <button
+                      key={domain.id}
+                      type="button"
+                      onClick={() => toggleDomain(domain.id)}
+                      className="focus:outline-none"
                     >
-                      {domain.name}
-                      {selectedDomains.includes(domain.name) && (
-                        <X className="h-3 w-3 ml-1" />
-                      )}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
+                      <Badge
+                        variant={selectedDomains.includes(domain.id) ? "primary" : "outline"}
+                        className={`cursor-pointer transition-all ${
+                          selectedDomains.includes(domain.id)
+                            ? "ring-2 ring-blue-200"
+                            : "hover:bg-slate-50"
+                        }`}
+                      >
+                        {domain.name}
+                        {selectedDomains.includes(domain.id) && (
+                          <X className="h-3 w-3 ml-1" />
+                        )}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
               <p className="text-xs text-slate-500">Select technology domains discussed</p>
             </div>
 
             {/* OEMs */}
             <div className="space-y-2">
               <Label>OEMs</Label>
-              <div className="flex flex-wrap gap-2">
-                {oems.map((oem) => (
-                  <button
-                    key={oem.id}
-                    onClick={() => toggleOem(oem.name)}
-                    className="focus:outline-none"
-                  >
-                    <Badge
-                      variant={selectedOems.includes(oem.name) ? "default" : "outline"}
-                      className={`cursor-pointer transition-all ${
-                        selectedOems.includes(oem.name)
-                          ? "ring-2 ring-slate-300"
-                          : "hover:bg-slate-50"
-                      }`}
+              {isLoadingData ? (
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-6 w-14 bg-slate-100 rounded animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {oems.map((oem) => (
+                    <button
+                      key={oem.id}
+                      type="button"
+                      onClick={() => toggleOem(oem.id)}
+                      className="focus:outline-none"
                     >
-                      {oem.name}
-                      {selectedOems.includes(oem.name) && (
-                        <X className="h-3 w-3 ml-1" />
-                      )}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
+                      <Badge
+                        variant={selectedOems.includes(oem.id) ? "default" : "outline"}
+                        className={`cursor-pointer transition-all ${
+                          selectedOems.includes(oem.id)
+                            ? "ring-2 ring-slate-300"
+                            : "hover:bg-slate-50"
+                        }`}
+                      >
+                        {oem.name}
+                        {selectedOems.includes(oem.id) && <X className="h-3 w-3 ml-1" />}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
               <p className="text-xs text-slate-500">Select vendors/OEMs involved</p>
             </div>
           </div>
 
+          {/* Assets Section */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Assets Used
+            </h3>
+            <AssetSelector
+              assets={assets}
+              selectedAssetIds={selectedAssets}
+              onSelectionChange={setSelectedAssets}
+              isLoading={isLoadingData}
+            />
+          </div>
+
           {/* Financials Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Financials</h3>
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Financials
+            </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -284,8 +430,8 @@ export function EngagementDrawer({ open, onOpenChange }: EngagementDrawerProps) 
                   <SelectValue placeholder="Select a rock to link..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No link</SelectItem>
-                  {activeRocks.map((rock) => (
+                  <SelectItem value="">No link</SelectItem>
+                  {rocks.map((rock) => (
                     <SelectItem key={rock.id} value={rock.id}>
                       {rock.title}
                     </SelectItem>
@@ -312,11 +458,21 @@ export function EngagementDrawer({ open, onOpenChange }: EngagementDrawerProps) 
         </div>
 
         <SheetFooter>
-          <Button variant="outline" onClick={() => handleSave(true)}>
-            Save & Log Another
-          </Button>
-          <Button variant="primary" onClick={() => handleSave(false)}>
-            Save & Close
+          {!isEditing && (
+            <Button
+              variant="outline"
+              onClick={() => handleSave(true)}
+              disabled={isSaving || !customerSearch.trim()}
+            >
+              Save & Log Another
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            onClick={() => handleSave(false)}
+            disabled={isSaving || !customerSearch.trim()}
+          >
+            {isSaving ? "Saving..." : isEditing ? "Update" : "Save & Close"}
           </Button>
         </SheetFooter>
       </SheetContent>

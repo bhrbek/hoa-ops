@@ -20,58 +20,101 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useTeam } from "@/contexts/team-context"
+import type { Rock, Project } from "@/types/supabase"
 
 interface CreateProjectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultRockId?: string
+  rocks?: Rock[]
+  onSave?: (data: CreateProjectData) => Promise<void>
 }
 
-const rocks = [
-  { id: "1", title: "Launch Enterprise API Integration" },
-  { id: "2", title: "Q1 Marketing Blitz" },
-  { id: "3", title: "Expand Sales Team" },
-]
+interface CreateProjectData {
+  rock_id: string
+  title: string
+  owner_id: string
+  start_date: string
+  end_date: string
+  estimated_hours: number
+}
 
-const owners = [
-  { value: "sarah", name: "Sarah J.", initials: "SJ", capacity: 85 },
-  { value: "mike", name: "Mike R.", initials: "MR", capacity: 92 },
-  { value: "alex", name: "Alex T.", initials: "AT", capacity: 70 },
-  { value: "david", name: "David K.", initials: "DK", capacity: 60 },
-]
+function getInitials(name: string): string {
+  const parts = name.split(" ")
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
 
 export function CreateProjectDialog({
   open,
   onOpenChange,
   defaultRockId,
+  rocks = [],
+  onSave,
 }: CreateProjectDialogProps) {
+  const { activeTeam, teamMembers, isLoading: isLoadingTeam } = useTeam()
+
   const [rockId, setRockId] = React.useState(defaultRockId || "")
   const [title, setTitle] = React.useState("")
   const [owner, setOwner] = React.useState("")
   const [startDate, setStartDate] = React.useState("")
   const [endDate, setEndDate] = React.useState("")
   const [estimatedHours, setEstimatedHours] = React.useState("")
+  const [isSaving, setIsSaving] = React.useState(false)
 
-  const selectedOwner = owners.find((o) => o.value === owner)
-  const isAtCapacity = selectedOwner && selectedOwner.capacity >= 90
+  // Find selected owner's capacity (from team members)
+  const selectedMember = teamMembers.find((m) => m.user_id === owner)
+  // In a real scenario, we'd calculate actual capacity usage
+  // For now, we'll just show if they're a manager (simulating high capacity)
+  const capacityPercent = selectedMember?.role === "manager" ? 85 : 60
+  const isAtCapacity = capacityPercent >= 90
 
   const isValid = rockId && title.trim() && owner && startDate && endDate
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Reset rockId when defaultRockId changes
+  React.useEffect(() => {
+    if (defaultRockId) {
+      setRockId(defaultRockId)
+    }
+  }, [defaultRockId])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isValid) return
 
-    // TODO: Save to database
-    console.log({ rockId, title, owner, startDate, endDate, estimatedHours })
+    setIsSaving(true)
 
-    // Reset and close
-    setRockId(defaultRockId || "")
-    setTitle("")
-    setOwner("")
-    setStartDate("")
-    setEndDate("")
-    setEstimatedHours("")
-    onOpenChange(false)
+    const data: CreateProjectData = {
+      rock_id: rockId,
+      title,
+      owner_id: owner,
+      start_date: startDate,
+      end_date: endDate,
+      estimated_hours: parseFloat(estimatedHours) || 0,
+    }
+
+    try {
+      if (onSave) {
+        await onSave(data)
+      }
+
+      // Reset and close
+      setRockId(defaultRockId || "")
+      setTitle("")
+      setOwner("")
+      setStartDate("")
+      setEndDate("")
+      setEstimatedHours("")
+      onOpenChange(false)
+    } catch (error) {
+      console.error("Failed to create project:", error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -100,11 +143,17 @@ export function CreateProjectDialog({
                 <SelectValue placeholder="Select a Rock" />
               </SelectTrigger>
               <SelectContent>
-                {rocks.map((rock) => (
-                  <SelectItem key={rock.id} value={rock.id}>
-                    {rock.title}
-                  </SelectItem>
-                ))}
+                {rocks.length === 0 ? (
+                  <div className="py-2 px-3 text-sm text-slate-500">
+                    No rocks available
+                  </div>
+                ) : (
+                  rocks.map((rock) => (
+                    <SelectItem key={rock.id} value={rock.id}>
+                      {rock.title}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -128,31 +177,37 @@ export function CreateProjectDialog({
                 <SelectValue placeholder="Select owner" />
               </SelectTrigger>
               <SelectContent>
-                {owners.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{o.name}</span>
-                      <span
-                        className={`text-xs ml-2 ${
-                          o.capacity >= 90 ? "text-red-500" : "text-slate-400"
-                        }`}
-                      >
-                        {o.capacity}%
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {isLoadingTeam ? (
+                  <div className="py-2 px-3 text-sm text-slate-500">Loading...</div>
+                ) : teamMembers.length === 0 ? (
+                  <div className="py-2 px-3 text-sm text-slate-500">No team members</div>
+                ) : (
+                  teamMembers.map((membership) => (
+                    <SelectItem key={membership.user_id} value={membership.user_id}>
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback className="text-[10px] bg-slate-100 text-slate-600">
+                              {getInitials(membership.user.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{membership.user.full_name}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
 
             {/* Capacity Warning */}
-            {isAtCapacity && (
+            {owner && isAtCapacity && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <div className="text-sm">
                   <p className="font-medium">Shield Up!</p>
                   <p className="text-amber-700">
-                    {selectedOwner?.name} is at {selectedOwner?.capacity}% capacity.
+                    {selectedMember?.user.full_name} is at {capacityPercent}% capacity.
                     Consider assigning to someone else or adjusting timelines.
                   </p>
                 </div>
@@ -201,8 +256,8 @@ export function CreateProjectDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={!isValid}>
-              Create Project
+            <Button type="submit" variant="primary" disabled={!isValid || isSaving}>
+              {isSaving ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
         </form>
