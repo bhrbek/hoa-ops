@@ -271,6 +271,7 @@ import { getAssets } from '@/app/actions/assets'
 | `/rocks` | Rocks | Rocks & Projects |
 | `/commitment-board` | Commitments | Weekly execution |
 | `/reports` | Reports | Business observability |
+| `/settings/admin` | Admin Settings | Manage domains, OEMs (org admin only) |
 | `/login` | Login | Authentication |
 
 ### Team Context Provides
@@ -298,8 +299,26 @@ import { getAssets } from '@/app/actions/assets'
 - Commit messages should describe the changes, not who/what made them
 
 ### Versioning
-- Version format: `YYYYMMDD-vN` (e.g., `20260106-v5`)
+- Version format: `YYYYMMDD-vN` (e.g., `20260106-v6`)
 - Version is stored in `/VERSION` file at project root
 - **Update VERSION file before each commit/push**
 - Version is displayed in bottom-right corner of the app (click to copy)
 - `next.config.ts` reads VERSION and injects as `NEXT_PUBLIC_APP_VERSION`
+
+### Admin Configuration
+Org admins can configure system reference data at `/settings/admin`:
+
+| Data Type | Configurable | Notes |
+|-----------|--------------|-------|
+| Domains | Yes | Technology domains (Cloud, Security, etc.) with color badges |
+| OEMs | Yes | Vendor/partner list (Cisco, AWS, etc.) |
+| Activity Types | No | System-defined: Workshop, Demo, POC, Advisory |
+
+**Server Actions for Admin:**
+```typescript
+// Domains
+import { createDomain, updateDomain, deleteDomain } from '@/app/actions/reference'
+
+// OEMs
+import { createOEM, updateOEM, deleteOEM } from '@/app/actions/reference'
+```
