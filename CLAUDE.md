@@ -160,6 +160,47 @@ supabase migration repair 001 002 003 --status applied --linked
 supabase inspect db table-stats --linked
 ```
 
+### Programmatic Database Access (REST API)
+
+The most reliable way to query the database programmatically is via the Supabase REST API:
+
+```bash
+# Get API keys
+supabase projects api-keys --project-ref pstevmcaxrqalafoyxmy
+
+# Service role key (full access, bypasses RLS)
+SERVICE_KEY="<service_role key from above>"
+BASE_URL="https://pstevmcaxrqalafoyxmy.supabase.co"
+
+# Query a table
+curl -s "$BASE_URL/rest/v1/rocks?select=id,title,team_id" \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY"
+
+# Count rows in a table
+curl -s -I "$BASE_URL/rest/v1/rocks?select=id&limit=0" \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Prefer: count=exact" | grep -i content-range
+
+# Call an RPC function
+curl -s "$BASE_URL/rest/v1/rpc/is_team_member" \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"check_team_id": "uuid-here"}'
+
+# Insert data
+curl -s "$BASE_URL/rest/v1/rocks" \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{"team_id": "uuid", "title": "Test Rock", ...}'
+```
+
+**Important:** Service role key bypasses RLS policies. Use anon key to test RLS behavior.
+
 ### DO NOT USE
 - `psql` direct connection (often fails with pooler issues)
 - `supabase db execute` (command doesn't exist)
