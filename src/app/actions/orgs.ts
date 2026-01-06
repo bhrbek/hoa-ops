@@ -86,7 +86,7 @@ export async function getUserOrgs(): Promise<Org[]> {
  */
 export async function updateOrg(
   orgId: string,
-  data: Partial<Pick<Org, 'name' | 'slug'>>
+  data: Partial<Pick<Org, 'name'>>
 ): Promise<Org> {
   await requireOrgAdmin(orgId)
   const supabase = await createClient()

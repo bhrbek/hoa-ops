@@ -33,26 +33,17 @@ export type Database = {
         Row: {
           id: string
           name: string
-          slug: string
           created_at: string
-          deleted_at: string | null
-          deleted_by: string | null
         }
         Insert: {
           id?: string
           name: string
-          slug: string
           created_at?: string
-          deleted_at?: string | null
-          deleted_by?: string | null
         }
         Update: {
           id?: string
           name?: string
-          slug?: string
           created_at?: string
-          deleted_at?: string | null
-          deleted_by?: string | null
         }
       }
       teams: {
