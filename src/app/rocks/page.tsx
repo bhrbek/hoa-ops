@@ -36,12 +36,14 @@ import {
 import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
 import { useTeam } from "@/contexts/team-context"
 import { getActiveRocks, createRock, updateRock, deleteRock } from "@/app/actions/rocks"
-import { createProject } from "@/app/actions/projects"
+import { createProject, updateProject } from "@/app/actions/projects"
 import { getActiveEngagements } from "@/app/actions/engagements"
 import { CreateRockDialog } from "@/components/climb/create-rock-dialog"
 import { CreateProjectDialog } from "@/components/climb/create-project-dialog"
+import { EditRockDialog } from "@/components/climb/edit-rock-dialog"
+import { EditProjectDialog } from "@/components/climb/edit-project-dialog"
 import { toast } from "sonner"
-import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus } from "@/types/supabase"
+import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus, Project, ProjectStatus } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -212,7 +214,11 @@ export default function RocksPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isProjectDialogOpen, setIsProjectDialogOpen] = React.useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
+  const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = React.useState(false)
   const [selectedRockId, setSelectedRockId] = React.useState<string | undefined>()
+  const [editingRock, setEditingRock] = React.useState<Rock | null>(null)
+  const [editingProject, setEditingProject] = React.useState<{ project: Project; rockTitle: string } | null>(null)
   const { activeTeam, isLoading } = useTeam()
 
   // Function to fetch/refresh data
@@ -334,6 +340,61 @@ export default function RocksPage() {
       console.error('Failed to archive rock:', err)
       toast.error('Failed to archive rock')
     }
+  }
+
+  // Handle opening edit dialog for a rock
+  const openEditDialog = (rock: RockWithProjects) => {
+    // Convert RockWithProjects to Rock for the edit dialog
+    const rockData: Rock = {
+      id: rock.id,
+      team_id: rock.team_id,
+      title: rock.title,
+      owner_id: rock.owner_id,
+      quarter: rock.quarter,
+      status: rock.status,
+      perfect_outcome: rock.perfect_outcome,
+      worst_outcome: rock.worst_outcome,
+      progress_override: rock.progress_override,
+      created_at: rock.created_at,
+      updated_at: rock.updated_at,
+      deleted_at: rock.deleted_at,
+      deleted_by: rock.deleted_by,
+    }
+    setEditingRock(rockData)
+    setIsEditDialogOpen(true)
+  }
+
+  // Handle saving rock edits
+  const handleEditRock = async (rockId: string, data: {
+    title?: string
+    owner_id?: string
+    status?: RockStatus
+    perfect_outcome?: string
+    worst_outcome?: string
+  }) => {
+    await updateRock(rockId, data)
+    // Silent refresh - preserves expanded state
+    await fetchData(false)
+  }
+
+  // Handle opening edit dialog for a project
+  const openEditProjectDialog = (project: Project, rockTitle: string) => {
+    setEditingProject({ project, rockTitle })
+    setIsEditProjectDialogOpen(true)
+  }
+
+  // Handle saving project edits
+  const handleEditProject = async (projectId: string, data: {
+    title?: string
+    owner_id?: string
+    status?: ProjectStatus
+    start_date?: string
+    end_date?: string
+    estimated_hours?: number
+  }) => {
+    await updateProject(projectId, data)
+    // Silent refresh - preserves expanded state
+    await fetchData(false)
   }
 
   const isPageLoading = isLoading || isLoadingData
@@ -539,6 +600,17 @@ export default function RocksPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const rawRock = rawRocks.find(r => r.id === rock.id)
+                            if (rawRock) openEditDialog(rawRock)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Rock
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         {rock.status !== 'Done' && (
                           <DropdownMenuItem
                             onClick={(e) => {
@@ -660,10 +732,13 @@ export default function RocksPage() {
                         {/* Gantt Rows */}
                         {rock.projects.map((project) => {
                           const ganttPos = getGanttPosition(project.startDate, project.endDate)
+                          // Find raw project data for editing
+                          const rawRock = rawRocks.find(r => r.id === rock.id)
+                          const rawProject = rawRock?.projects?.find(p => p.id === project.id)
                           return (
                             <div
                               key={project.id}
-                              className="grid grid-cols-[240px_1fr] border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors"
+                              className="grid grid-cols-[240px_1fr] border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group"
                             >
                               {/* Project Info */}
                               <div className="px-4 py-3 flex items-center gap-3">
@@ -672,7 +747,7 @@ export default function RocksPage() {
                                     {project.owner.initials}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <p className="text-sm font-medium text-slate-900 truncate">
                                     {project.title}
                                   </p>
@@ -680,6 +755,21 @@ export default function RocksPage() {
                                     {formatShortDate(project.startDate)} - {formatShortDate(project.endDate)}
                                   </p>
                                 </div>
+                                {/* Edit button - appears on hover */}
+                                {rawProject && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openEditProjectDialog(rawProject as Project, rock.title)
+                                    }}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                    <span className="sr-only">Edit project</span>
+                                  </Button>
+                                )}
                               </div>
 
                               {/* Gantt Bar */}
@@ -800,6 +890,33 @@ export default function RocksPage() {
         rocks={rawRocks as Rock[]}
         onSave={handleCreateProject}
       />
+
+      {/* Edit Rock Dialog */}
+      {editingRock && (
+        <EditRockDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open)
+            if (!open) setEditingRock(null)
+          }}
+          rock={editingRock}
+          onSave={handleEditRock}
+        />
+      )}
+
+      {/* Edit Project Dialog */}
+      {editingProject && (
+        <EditProjectDialog
+          open={isEditProjectDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditProjectDialogOpen(open)
+            if (!open) setEditingProject(null)
+          }}
+          project={editingProject.project}
+          rockTitle={editingProject.rockTitle}
+          onSave={handleEditProject}
+        />
+      )}
     </div>
   )
 }
