@@ -143,7 +143,7 @@ export default function StreamPage() {
   const handleCreateEngagement = async (formData: {
     customer_name: string
     date: string
-    activity_type: "Workshop" | "Demo" | "POC" | "Advisory"
+    activity_type: string
     revenue_impact: number
     gp_impact: number
     notes: string

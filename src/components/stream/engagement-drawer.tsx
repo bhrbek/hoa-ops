@@ -25,7 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { AssetSelector } from "@/components/stream/asset-selector"
 import { useTeam } from "@/contexts/team-context"
-import type { Domain, OEM, Rock, Asset, Engagement } from "@/types/supabase"
+import type { Domain, OEM, Rock, Asset, Engagement, ActivityType } from "@/types/supabase"
 
 interface EngagementDrawerProps {
   open: boolean
@@ -40,7 +40,7 @@ interface EngagementDrawerProps {
 interface EngagementFormData {
   customer_name: string
   date: string
-  activity_type: "Workshop" | "Demo" | "POC" | "Advisory"
+  activity_type: string
   revenue_impact: number
   gp_impact: number
   notes: string
@@ -49,13 +49,6 @@ interface EngagementFormData {
   oem_ids: string[]
   asset_ids: string[]
 }
-
-const activityTypes = [
-  { value: "Workshop", label: "Workshop" },
-  { value: "Demo", label: "Demo" },
-  { value: "POC", label: "POC" },
-  { value: "Advisory", label: "Advisory" },
-] as const
 
 export function EngagementDrawer({
   open,
@@ -83,6 +76,7 @@ export function EngagementDrawer({
   // Data from server
   const [domains, setDomains] = React.useState<Domain[]>([])
   const [oems, setOems] = React.useState<OEM[]>([])
+  const [activityTypes, setActivityTypes] = React.useState<ActivityType[]>([])
   const [rocks, setRocks] = React.useState<Rock[]>([])
   const [assets, setAssets] = React.useState<Asset[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
@@ -98,7 +92,7 @@ export function EngagementDrawer({
     setIsLoadingData(true)
     try {
       const [
-        { getDomains, getOEMs },
+        { getDomains, getOEMs, getActivityTypes },
         { getActiveRocks },
         { getAssets },
       ] = await Promise.all([
@@ -107,15 +101,17 @@ export function EngagementDrawer({
         import("@/app/actions/assets"),
       ])
 
-      const [domainsData, oemsData, rocksData, assetsData] = await Promise.all([
+      const [domainsData, oemsData, activityTypesData, rocksData, assetsData] = await Promise.all([
         getDomains(),
         getOEMs(),
+        getActivityTypes(),
         activeTeam ? getActiveRocks(activeTeam.id) : Promise.resolve([]),
         activeTeam ? getAssets(activeTeam.id) : Promise.resolve([]),
       ])
 
       setDomains(domainsData)
       setOems(oemsData)
+      setActivityTypes(activityTypesData)
       setRocks(rocksData)
       setAssets(assetsData)
     } catch (error) {
@@ -175,7 +171,7 @@ export function EngagementDrawer({
     const formData: EngagementFormData = {
       customer_name: customerSearch,
       date,
-      activity_type: activityType as "Workshop" | "Demo" | "POC" | "Advisory",
+      activity_type: activityType,
       revenue_impact: parseFloat(revenue) || 0,
       gp_impact: parseFloat(gp) || 0,
       notes,
@@ -279,8 +275,8 @@ export function EngagementDrawer({
                 </SelectTrigger>
                 <SelectContent>
                   {activityTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                    <SelectItem key={type.id} value={type.name}>
+                      {type.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

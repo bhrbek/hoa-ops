@@ -14,7 +14,7 @@ export type TeamRole = 'manager' | 'tsa'
 export type RockStatus = 'On Track' | 'At Risk' | 'Off Track' | 'Done'
 export type ProjectStatus = 'Active' | 'Done' | 'Blocked'
 export type TaskPriority = 'low' | 'medium' | 'high'
-export type ActivityType = 'Workshop' | 'Demo' | 'POC' | 'Advisory'
+export type ActivityTypeName = string // Dynamic from activity_types table
 export type BuildSignalStatus = 'not_started' | 'in_progress' | 'achieved' | 'missed'
 export type CommitmentStatus = 'planned' | 'done' | 'blocked' | 'slipped'
 export type CustomerStatus = 'active' | 'churned' | 'prospect'
@@ -169,6 +169,32 @@ export type Database = {
           id?: string
           name?: string
           color?: string
+          created_at?: string
+        }
+      }
+      activity_types: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          color: string
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          color?: string
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          display_order?: number
           created_at?: string
         }
       }
@@ -513,7 +539,7 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           date: string
-          activity_type: ActivityType
+          activity_type: string
           revenue_impact: number
           gp_impact: number
           notes: string | null
@@ -532,7 +558,7 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           date?: string
-          activity_type: ActivityType
+          activity_type: string
           revenue_impact?: number
           gp_impact?: number
           notes?: string | null
@@ -551,7 +577,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           date?: string
-          activity_type?: ActivityType
+          activity_type?: string
           revenue_impact?: number
           gp_impact?: number
           notes?: string | null
@@ -792,6 +818,7 @@ export type TeamMembership = Database['public']['Tables']['team_memberships']['R
 export type OrgAdmin = Database['public']['Tables']['org_admins']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Domain = Database['public']['Tables']['domains']['Row']
+export type ActivityType = Database['public']['Tables']['activity_types']['Row']
 export type OEM = Database['public']['Tables']['oems']['Row']
 export type Customer = Database['public']['Tables']['customers']['Row']
 export type Rock = Database['public']['Tables']['rocks']['Row']

@@ -494,7 +494,35 @@ const { data } = await supabase.from('org_admins')
   .select('id').eq('user_id', userId).maybeSingle()  // Returns null on 0 rows
 ```
 
-### 6. RLS Debugging Checklist
+### 6. Explicit FK Hints for Ambiguous Relationships (PGRST201)
+
+When a table has multiple FKs pointing to the same table, PostgREST cannot infer which relationship to use and returns error `PGRST201: Could not embed because more than one relationship was found`.
+
+**Example Problem:**
+```typescript
+// rocks table has BOTH owner_id AND deleted_by pointing to profiles
+.select('*, owner:profiles(*)')  // FAILS - ambiguous!
+```
+
+**Solution - Use explicit FK hint:**
+```typescript
+.select('*, owner:profiles!rocks_owner_id_fkey(*)')  // Works!
+```
+
+**Tables requiring explicit FK hints:**
+
+| Table | Field | FK Hint |
+|-------|-------|---------|
+| rocks | owner | `profiles!rocks_owner_id_fkey` |
+| projects | owner | `profiles!projects_owner_id_fkey` |
+| team_memberships | user | `profiles!team_memberships_user_id_fkey` |
+| org_admins | user | `profiles!org_admins_user_id_fkey` |
+| commitments | owner | `profiles!commitments_owner_id_fkey` |
+| engagements | owner | `profiles!engagements_owner_id_fkey` |
+
+**Why this happens:** Soft delete pattern adds `deleted_by` FK to profiles alongside the primary FK (owner_id, user_id).
+
+### 7. RLS Debugging Checklist
 
 When RLS queries return empty unexpectedly:
 
@@ -503,7 +531,8 @@ When RLS queries return empty unexpectedly:
 3. **Check column references** (subqueries may reference wrong table)
 4. **Check nested selects** (non-existent columns fail silently)
 5. **Check for .single() vs .maybeSingle()** (single() throws on 0 rows)
-6. **Create debug endpoint** to isolate server action vs RLS issues
+6. **Check for PGRST201** (ambiguous FK - use explicit FK hints)
+7. **Create debug endpoint** to isolate server action vs RLS issues
 
 ---
 

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from './auth'
 import { getTeamMembers } from './teams'
-import type { Domain, OEM, Profile, Customer } from '@/types/supabase'
+import type { Domain, OEM, Profile, Customer, ActivityType } from '@/types/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -422,5 +422,122 @@ export async function deleteOEM(oemId: string): Promise<void> {
   if (error) {
     console.error('Error deleting OEM:', error)
     throw new Error('Failed to delete OEM')
+  }
+}
+
+// ============================================
+// ADMIN: Activity Type Management
+// ============================================
+
+/**
+ * Get all activity types (reference data, not team-scoped)
+ */
+export async function getActivityTypes(): Promise<ActivityType[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as any)
+    .from('activity_types')
+    .select('*')
+    .order('display_order')
+
+  if (error) {
+    console.error('Error fetching activity types:', error)
+    throw new Error('Failed to fetch activity types')
+  }
+
+  return data
+}
+
+/**
+ * Create a new activity type (org admin only)
+ */
+export async function createActivityType(data: {
+  name: string
+  description?: string
+  color?: string
+}): Promise<ActivityType> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
+  const supabase = await createClient()
+
+  // Get max display_order
+  const { data: existing } = await (supabase as any)
+    .from('activity_types')
+    .select('display_order')
+    .order('display_order', { ascending: false })
+    .limit(1)
+
+  const nextOrder = (existing?.[0]?.display_order || 0) + 1
+
+  const { data: activityType, error } = await (supabase as any)
+    .from('activity_types')
+    .insert({
+      name: data.name,
+      description: data.description || null,
+      color: data.color || 'default',
+      display_order: nextOrder,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating activity type:', error)
+    throw new Error('Failed to create activity type')
+  }
+
+  return activityType
+}
+
+/**
+ * Update an activity type (org admin only)
+ */
+export async function updateActivityType(
+  activityTypeId: string,
+  data: { name?: string; description?: string; color?: string }
+): Promise<ActivityType> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
+  const supabase = await createClient()
+
+  const { data: activityType, error } = await (supabase as any)
+    .from('activity_types')
+    .update(data)
+    .eq('id', activityTypeId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating activity type:', error)
+    throw new Error('Failed to update activity type')
+  }
+
+  return activityType
+}
+
+/**
+ * Delete an activity type (org admin only)
+ */
+export async function deleteActivityType(activityTypeId: string): Promise<void> {
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam?.isOrgAdmin) {
+    throw new Error('Access denied: org admin required')
+  }
+
+  const supabase = await createClient()
+
+  const { error } = await (supabase as any)
+    .from('activity_types')
+    .delete()
+    .eq('id', activityTypeId)
+
+  if (error) {
+    console.error('Error deleting activity type:', error)
+    throw new Error('Failed to delete activity type')
   }
 }

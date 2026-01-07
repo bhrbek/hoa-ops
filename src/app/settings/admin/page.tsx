@@ -17,12 +17,16 @@ import { useTeam } from "@/contexts/team-context"
 import {
   getDomains,
   getOEMs,
+  getActivityTypes,
   createDomain,
   updateDomain,
   deleteDomain,
   createOEM,
   updateOEM,
   deleteOEM,
+  createActivityType,
+  updateActivityType,
+  deleteActivityType,
   getProfiles,
 } from "@/app/actions/reference"
 import {
@@ -35,7 +39,7 @@ import {
   updateTeamMemberRole,
   removeTeamMember,
 } from "@/app/actions/teams"
-import type { Domain, OEM, Team, TeamMembership, Profile, TeamRole } from "@/types/supabase"
+import type { Domain, OEM, Team, TeamMembership, Profile, TeamRole, ActivityType } from "@/types/supabase"
 
 const DOMAIN_COLORS = [
   { value: "default", label: "Gray" },
@@ -52,6 +56,7 @@ export default function AdminSettingsPage() {
 
   const [domains, setDomains] = React.useState<Domain[]>([])
   const [oems, setOems] = React.useState<OEM[]>([])
+  const [activityTypes, setActivityTypes] = React.useState<ActivityType[]>([])
   const [teams, setTeams] = React.useState<Team[]>([])
   const [profiles, setProfiles] = React.useState<Profile[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -69,6 +74,14 @@ export default function AdminSettingsPage() {
   const [editingOemName, setEditingOemName] = React.useState("")
   const [newOemName, setNewOemName] = React.useState("")
   const [isAddingOem, setIsAddingOem] = React.useState(false)
+
+  // Activity Type editing state
+  const [editingActivityTypeId, setEditingActivityTypeId] = React.useState<string | null>(null)
+  const [editingActivityTypeName, setEditingActivityTypeName] = React.useState("")
+  const [editingActivityTypeDescription, setEditingActivityTypeDescription] = React.useState("")
+  const [newActivityTypeName, setNewActivityTypeName] = React.useState("")
+  const [newActivityTypeDescription, setNewActivityTypeDescription] = React.useState("")
+  const [isAddingActivityType, setIsAddingActivityType] = React.useState(false)
 
   // Team editing state
   const [editingTeamId, setEditingTeamId] = React.useState<string | null>(null)
@@ -92,9 +105,10 @@ export default function AdminSettingsPage() {
       setIsLoading(true)
 
       // Load each independently so failures are isolated
-      const [domainsResult, oemsResult, teamsResult, profilesResult] = await Promise.allSettled([
+      const [domainsResult, oemsResult, activityTypesResult, teamsResult, profilesResult] = await Promise.allSettled([
         getDomains(),
         getOEMs(),
+        getActivityTypes(),
         getTeams(activeOrg.id),
         getProfiles(),
       ])
@@ -104,6 +118,9 @@ export default function AdminSettingsPage() {
 
       if (oemsResult.status === 'fulfilled') setOems(oemsResult.value)
       else console.error("Failed to load OEMs:", oemsResult.reason)
+
+      if (activityTypesResult.status === 'fulfilled') setActivityTypes(activityTypesResult.value)
+      else console.error("Failed to load activity types:", activityTypesResult.reason)
 
       if (teamsResult.status === 'fulfilled') setTeams(teamsResult.value)
       else console.error("Failed to load teams:", teamsResult.reason)
@@ -215,6 +232,62 @@ export default function AdminSettingsPage() {
   const startEditingOem = (oem: OEM) => {
     setEditingOemId(oem.id)
     setEditingOemName(oem.name)
+  }
+
+  // Activity Type handlers
+  const handleAddActivityType = async () => {
+    if (!newActivityTypeName.trim()) return
+    setIsSaving(true)
+    try {
+      const activityType = await createActivityType({
+        name: newActivityTypeName,
+        description: newActivityTypeDescription || undefined,
+      })
+      setActivityTypes([...activityTypes, activityType].sort((a, b) => a.display_order - b.display_order))
+      setNewActivityTypeName("")
+      setNewActivityTypeDescription("")
+      setIsAddingActivityType(false)
+    } catch (error) {
+      console.error("Failed to add activity type:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdateActivityType = async (activityTypeId: string) => {
+    if (!editingActivityTypeName.trim()) return
+    setIsSaving(true)
+    try {
+      const updated = await updateActivityType(activityTypeId, {
+        name: editingActivityTypeName,
+        description: editingActivityTypeDescription || undefined,
+      })
+      setActivityTypes(activityTypes.map(at => at.id === activityTypeId ? updated : at))
+      setEditingActivityTypeId(null)
+    } catch (error) {
+      console.error("Failed to update activity type:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteActivityType = async (activityTypeId: string) => {
+    if (!confirm("Delete this activity type? Existing engagements using this type may be affected.")) return
+    setIsSaving(true)
+    try {
+      await deleteActivityType(activityTypeId)
+      setActivityTypes(activityTypes.filter(at => at.id !== activityTypeId))
+    } catch (error) {
+      console.error("Failed to delete activity type:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const startEditingActivityType = (activityType: ActivityType) => {
+    setEditingActivityTypeId(activityType.id)
+    setEditingActivityTypeName(activityType.name)
+    setEditingActivityTypeDescription(activityType.description || "")
   }
 
   // Team handlers
@@ -782,23 +855,101 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Activity Types (read-only for now) */}
+        {/* Activity Types */}
         <Card>
           <CardHeader>
-            <CardTitle>Activity Types</CardTitle>
-            <CardDescription>Types of customer engagements (currently system-defined)</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Activity Types</CardTitle>
+                <CardDescription>Types of customer engagements used in the Stream</CardDescription>
+              </div>
+              {!isAddingActivityType && (
+                <Button variant="outline" size="sm" onClick={() => setIsAddingActivityType(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Activity Type
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {["Workshop", "Demo", "POC", "Advisory"].map((type) => (
-                <Badge key={type} variant="outline" className="text-sm">
-                  {type}
-                </Badge>
+            <div className="space-y-2">
+              {/* Add new activity type form */}
+              {isAddingActivityType && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+                  <Input
+                    placeholder="Activity type name..."
+                    value={newActivityTypeName}
+                    onChange={(e) => setNewActivityTypeName(e.target.value)}
+                    autoFocus
+                  />
+                  <Input
+                    placeholder="Description (optional)..."
+                    value={newActivityTypeDescription}
+                    onChange={(e) => setNewActivityTypeDescription(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddActivityType} disabled={isSaving || !newActivityTypeName.trim()}>
+                      <Check className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setIsAddingActivityType(false); setNewActivityTypeName(""); setNewActivityTypeDescription(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity type list */}
+              {activityTypes.map((activityType) => (
+                <div
+                  key={activityType.id}
+                  className="flex items-center gap-2 p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                >
+                  {editingActivityTypeId === activityType.id ? (
+                    <>
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={editingActivityTypeName}
+                          onChange={(e) => setEditingActivityTypeName(e.target.value)}
+                          placeholder="Activity type name"
+                          autoFocus
+                        />
+                        <Input
+                          value={editingActivityTypeDescription}
+                          onChange={(e) => setEditingActivityTypeDescription(e.target.value)}
+                          placeholder="Description (optional)"
+                        />
+                      </div>
+                      <Button size="sm" onClick={() => handleUpdateActivityType(activityType.id)} disabled={isSaving}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingActivityTypeId(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900">{activityType.name}</div>
+                        {activityType.description && (
+                          <div className="text-sm text-slate-500">{activityType.description}</div>
+                        )}
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => startEditingActivityType(activityType)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteActivityType(activityType.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               ))}
+
+              {activityTypes.length === 0 && !isAddingActivityType && (
+                <p className="text-sm text-slate-500 text-center py-4">No activity types configured</p>
+              )}
             </div>
-            <p className="text-xs text-slate-400 mt-3">
-              Activity types are system-defined. Contact support to add new types.
-            </p>
           </CardContent>
         </Card>
       </div>

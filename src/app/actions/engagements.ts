@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireTeamAccess, getActiveTeam } from './auth'
-import type { Engagement, EngagementWithRelations, ActivityType } from '@/types/supabase'
+import type { Engagement, EngagementWithRelations } from '@/types/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -148,7 +148,7 @@ export async function createEngagement(data: {
   customer_name?: string
   customer_id?: string
   date?: string
-  activity_type: ActivityType
+  activity_type: string
   revenue_impact?: number
   gp_impact?: number
   notes?: string
@@ -417,7 +417,7 @@ export async function getOEMBuyingPatterns(limit = 10): Promise<{
  */
 export async function getEngagementsByType(
   teamId: string,
-  activityType: ActivityType
+  activityType: string
 ): Promise<EngagementWithRelations[]> {
   await requireTeamAccess(teamId)
   const supabase = await createClient()
