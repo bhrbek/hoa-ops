@@ -17,20 +17,31 @@ import {
   Calendar,
   Loader2,
   RefreshCw,
+  Pencil,
+  Archive,
+  XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
 import { useTeam } from "@/contexts/team-context"
-import { getActiveRocks, createRock } from "@/app/actions/rocks"
+import { getActiveRocks, createRock, updateRock, deleteRock } from "@/app/actions/rocks"
 import { createProject } from "@/app/actions/projects"
 import { getActiveEngagements } from "@/app/actions/engagements"
 import { CreateRockDialog } from "@/components/climb/create-rock-dialog"
 import { CreateProjectDialog } from "@/components/climb/create-project-dialog"
-import type { RockWithProjects, EngagementWithRelations, Rock } from "@/types/supabase"
+import { toast } from "sonner"
+import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -205,7 +216,8 @@ export default function RocksPage() {
   const { activeTeam, isLoading } = useTeam()
 
   // Function to fetch/refresh data
-  const fetchData = React.useCallback(async () => {
+  // showLoading: if false, refresh silently in background (preserves view context)
+  const fetchData = React.useCallback(async (showLoading = true) => {
     if (!activeTeam) {
       setRocks([])
       setRawRocks([])
@@ -214,7 +226,9 @@ export default function RocksPage() {
       return
     }
 
-    setIsLoadingData(true)
+    if (showLoading) {
+      setIsLoadingData(true)
+    }
     setError(null)
     try {
       // Fetch rocks and engagements in parallel
@@ -227,17 +241,22 @@ export default function RocksPage() {
       const transformedRocks = rocksData.map(rock => transformRock(rock, engagementsData))
       setRocks(transformedRocks)
 
-      // Auto-expand first rock if available
-      if (transformedRocks.length > 0 && expandedRocks.length === 0) {
+      // Auto-expand first rock only on initial load (when showLoading is true)
+      if (showLoading && transformedRocks.length > 0 && expandedRocks.length === 0) {
         setExpandedRocks([transformedRocks[0].id])
       }
     } catch (err) {
       console.error('Failed to fetch rocks:', err)
-      setRocks([])
-      setRawRocks([])
+      if (showLoading) {
+        // Only clear data on initial load failure, not background refresh
+        setRocks([])
+        setRawRocks([])
+      }
       setError('Failed to load rocks. Please try again.')
     } finally {
-      setIsLoadingData(false)
+      if (showLoading) {
+        setIsLoadingData(false)
+      }
     }
   }, [activeTeam?.id])
 
@@ -255,9 +274,11 @@ export default function RocksPage() {
     perfect_outcome: string
     worst_outcome?: string
   }) => {
-    await createRock(data)
-    // Refresh the list after creating
-    await fetchData()
+    const newRock = await createRock(data)
+    // Silent refresh - preserves expanded state and scroll position
+    await fetchData(false)
+    // Auto-expand the newly created rock
+    setExpandedRocks(prev => [...prev, newRock.id])
   }
 
   // Handle creating a new project
@@ -270,8 +291,8 @@ export default function RocksPage() {
     estimated_hours: number
   }) => {
     await createProject(data)
-    // Refresh the list after creating
-    await fetchData()
+    // Silent refresh - preserves expanded state and scroll position
+    await fetchData(false)
   }
 
   // Open project dialog with a specific rock selected
@@ -286,6 +307,33 @@ export default function RocksPage() {
         ? prev.filter((id) => id !== rockId)
         : [...prev, rockId]
     )
+  }
+
+  // Handle changing rock status
+  const handleStatusChange = async (rockId: string, newStatus: RockStatus) => {
+    try {
+      await updateRock(rockId, { status: newStatus })
+      toast.success(`Rock marked as ${newStatus}`)
+      await fetchData()
+    } catch (err) {
+      console.error('Failed to update rock status:', err)
+      toast.error('Failed to update rock status')
+    }
+  }
+
+  // Handle archiving (soft delete) a rock
+  const handleArchiveRock = async (rockId: string) => {
+    if (!confirm('Are you sure you want to archive this rock? This action can be undone by an admin.')) {
+      return
+    }
+    try {
+      await deleteRock(rockId)
+      toast.success('Rock archived successfully')
+      await fetchData()
+    } catch (err) {
+      console.error('Failed to archive rock:', err)
+      toast.error('Failed to archive rock')
+    }
   }
 
   const isPageLoading = isLoading || isLoadingData
@@ -476,6 +524,81 @@ export default function RocksPage() {
                       <StatusIcon className="h-4 w-4" />
                       {rock.status}
                     </div>
+
+                    {/* Rock Actions Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Rock actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        {rock.status !== 'Done' && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(rock.id, 'Done')
+                            }}
+                            className="text-emerald-600"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Mark as Done
+                          </DropdownMenuItem>
+                        )}
+                        {rock.status !== 'On Track' && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(rock.id, 'On Track')
+                            }}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Mark On Track
+                          </DropdownMenuItem>
+                        )}
+                        {rock.status !== 'At Risk' && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(rock.id, 'At Risk')
+                            }}
+                            className="text-amber-600"
+                          >
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Mark At Risk
+                          </DropdownMenuItem>
+                        )}
+                        {rock.status !== 'Off Track' && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleStatusChange(rock.id, 'Off Track')
+                            }}
+                            className="text-red-600"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Mark Off Track
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleArchiveRock(rock.id)
+                          }}
+                          className="text-slate-500"
+                        >
+                          <Archive className="h-4 w-4 mr-2" />
+                          Archive Rock
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
