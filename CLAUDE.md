@@ -654,3 +654,92 @@ render(<MyComponent />, {
     isLoading: false,
   },
 })
+
+---
+
+## SESSION CONTINUITY & MCP SERVERS
+
+### Start of Session Checklist
+
+At the start of each Claude Code session, review:
+
+1. **This file (CLAUDE.md)** - System contract, architecture, patterns
+2. **docs/TASKS.md** - Current task backlog and progress
+3. **VERSION file** - Current version number
+4. **Git status** - Uncommitted changes, current branch
+
+### Installed MCP Servers
+
+These MCP servers are configured for this project:
+
+| Server | Purpose | Usage |
+|--------|---------|-------|
+| `postgres` | Direct Supabase DB access | Query tables, check RLS, debug data |
+| `github` | GitHub integration | PR management, issues, code search |
+| `filesystem` | File access | Read/write files in ~/Documents |
+| `memory` | Persistent knowledge | Remember context across sessions |
+
+**Check MCP status:**
+```bash
+claude mcp list
+```
+
+**Add new MCP server:**
+```bash
+claude mcp add <name> -- <command>
+```
+
+### Task Tracking
+
+**Primary task file:** `docs/TASKS.md`
+
+This file contains:
+- Current sprint/phase tasks
+- Completed work log
+- Known issues and blockers
+- Future roadmap items
+
+**Always update TASKS.md when:**
+- Starting a new feature
+- Completing a task
+- Discovering bugs/blockers
+- Making architectural decisions
+
+### Project Goals (Current Phase)
+
+**Headwaters** is a strategy execution system for TSA organizations.
+
+**Current Focus Areas:**
+1. Fix RLS/permission issues in all views
+2. Wire up all pages to real data
+3. Add rich text editing for Rocks
+4. Make Vista dashboard cards clickable
+5. Complete admin settings functionality
+
+### Quick State Check Commands
+
+```bash
+# Current version
+cat VERSION
+
+# Git status
+git status --short
+
+# Recent commits
+git log --oneline -5
+
+# Check if deployment is current
+curl -s https://thejar.vercel.app/api/debug | jq '.serverActions.getActiveRocks'
+
+# Database quick check
+PGPASSWORD='kvTnp1OB4mBRma60' psql "postgresql://postgres:kvTnp1OB4mBRma60@db.pstevmcaxrqalafoyxmy.supabase.co:5432/postgres" -c "SELECT COUNT(*) FROM rocks WHERE deleted_at IS NULL;"
+```
+
+### Resuming Work
+
+When resuming an interrupted session:
+
+1. Read the last few git commits to understand recent changes
+2. Check `docs/TASKS.md` for current progress
+3. Review any open TODO items in the code (`grep -r "TODO" src/`)
+4. Check Vercel deployment status if testing production

@@ -73,21 +73,25 @@ export function CreateCommitmentDialog({
 
   async function loadReferenceData() {
     setIsLoadingData(true)
+    console.log('[CreateCommitmentDialog] loadReferenceData starting, activeTeam:', activeTeam?.id)
     try {
       const [{ getActiveRocks }, { getProjects }] = await Promise.all([
         import("@/app/actions/rocks"),
         import("@/app/actions/projects"),
       ])
 
-      const [rocksData, projectsData] = await Promise.all([
-        activeTeam ? getActiveRocks() : Promise.resolve([]),
-        activeTeam ? getProjects(activeTeam.id) : Promise.resolve([]),
-      ])
+      console.log('[CreateCommitmentDialog] Calling getActiveRocks()...')
+      const rocksData = activeTeam ? await getActiveRocks() : []
+      console.log('[CreateCommitmentDialog] getActiveRocks result:', rocksData.length, 'rocks')
+
+      console.log('[CreateCommitmentDialog] Calling getProjects()...')
+      const projectsData = activeTeam ? await getProjects(activeTeam.id) : []
+      console.log('[CreateCommitmentDialog] getProjects result:', projectsData.length, 'projects')
 
       setRocks(rocksData)
       setProjects(projectsData as ProjectWithRock[])
     } catch (error) {
-      console.error("Failed to load reference data:", error)
+      console.error("[CreateCommitmentDialog] Failed to load reference data:", error)
     } finally {
       setIsLoadingData(false)
     }
