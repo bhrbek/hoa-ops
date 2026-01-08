@@ -80,7 +80,7 @@ export function CreateCommitmentDialog({
       ])
 
       const [rocksData, projectsData] = await Promise.all([
-        activeTeam ? getActiveRocks(activeTeam.id) : Promise.resolve([]),
+        activeTeam ? getActiveRocks() : Promise.resolve([]),
         activeTeam ? getProjects(activeTeam.id) : Promise.resolve([]),
       ])
 
