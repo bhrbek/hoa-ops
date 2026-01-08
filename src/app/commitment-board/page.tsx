@@ -314,7 +314,7 @@ export default function CommitmentBoardPage() {
                 <CheckCircle2 className="h-12 w-12 text-slate-300 mb-4" />
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">No Commitments This Week</h3>
                 <p className="text-sm text-slate-500 max-w-md mb-4">
-                  Create commitments to track your weekly execution against Projects and Build Signals.
+                  Create commitments to track your weekly execution against Projects and Key Results.
                 </p>
                 <Button
                   variant="primary"
@@ -475,7 +475,7 @@ export default function CommitmentBoardPage() {
           <p>
             <strong>Commitment Rules:</strong> Each commitment must link to a{" "}
             <span className="font-semibold">Project</span> and a{" "}
-            <span className="font-semibold">Build Signal</span>. Commitments
+            <span className="font-semibold">Key Result</span>. Commitments
             never link to Engagements.
           </p>
         </div>
