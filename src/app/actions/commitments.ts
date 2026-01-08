@@ -25,18 +25,9 @@ export async function getCommitments(
   teamId: string,
   weekOf?: string
 ): Promise<CommitmentWithRelations[]> {
-  console.log('[getCommitments] Starting for team:', teamId, 'week:', weekOf)
-
-  try {
-    await requireTeamAccess(teamId)
-    console.log('[getCommitments] Team access verified')
-  } catch (accessError) {
-    console.error('[getCommitments] Team access error:', accessError)
-    throw accessError
-  }
+  await requireTeamAccess(teamId)
 
   const supabase = await createClient()
-  console.log('[getCommitments] Supabase client created')
 
   let query = (supabase as any)
     .from('commitments')
@@ -54,12 +45,10 @@ export async function getCommitments(
     query = query.eq('week_of', weekOf)
   }
 
-  console.log('[getCommitments] Executing query...')
   const { data, error } = await query
-  console.log('[getCommitments] Query complete. Error:', error, 'Data count:', data?.length)
 
   if (error) {
-    console.error('[getCommitments] Supabase error:', JSON.stringify(error))
+    console.error('Error fetching commitments:', error)
     throw new Error('Failed to fetch commitments: ' + error.message)
   }
 
@@ -70,23 +59,11 @@ export async function getCommitments(
  * Get commitments for active team
  */
 export async function getActiveCommitments(weekOf?: string): Promise<CommitmentWithRelations[]> {
-  console.log('[getActiveCommitments] Starting...')
-  try {
-    const activeTeam = await getActiveTeam()
-    console.log('[getActiveCommitments] activeTeam:', activeTeam?.team?.id, activeTeam?.team?.name)
-    if (!activeTeam) throw new Error('No active team')
+  const activeTeam = await getActiveTeam()
+  if (!activeTeam) throw new Error('No active team')
 
-    const week = weekOf || getWeekOf(new Date())
-    console.log('[getActiveCommitments] Fetching for week:', week)
-    const result = await getCommitments(activeTeam.team.id, week)
-    console.log('[getActiveCommitments] Success, count:', result.length)
-    return result
-  } catch (error) {
-    console.error('[getActiveCommitments] Error:', error)
-    console.error('[getActiveCommitments] Error message:', error instanceof Error ? error.message : String(error))
-    console.error('[getActiveCommitments] Error stack:', error instanceof Error ? error.stack : 'no stack')
-    throw error
-  }
+  const week = weekOf || getWeekOf(new Date())
+  return getCommitments(activeTeam.team.id, week)
 }
 
 /**
