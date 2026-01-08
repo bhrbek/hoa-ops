@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   ChevronDown,
   ChevronRight,
@@ -210,7 +212,10 @@ function getGanttPosition(startDate: string, endDate: string) {
   return { left: `${startPercent}%`, width: `${widthPercent}%` }
 }
 
-export default function RocksPage() {
+function RocksPageContent() {
+  const searchParams = useSearchParams()
+  const rockIdFromUrl = searchParams.get('rock')
+
   const [expandedRocks, setExpandedRocks] = React.useState<string[]>([])
   const [rocks, setRocks] = React.useState<UIRock[]>([])
   const [rawRocks, setRawRocks] = React.useState<RockWithProjects[]>([])
@@ -226,6 +231,7 @@ export default function RocksPage() {
   const [isKeyResultDialogOpen, setIsKeyResultDialogOpen] = React.useState(false)
   const [keyResultRock, setKeyResultRock] = React.useState<{ id: string; title: string } | null>(null)
   const [keyResultsMap, setKeyResultsMap] = React.useState<Map<string, KeyResult[]>>(new Map())
+  const [hasHandledUrlRock, setHasHandledUrlRock] = React.useState(false)
   const { activeTeam, isLoading } = useTeam()
 
   // Function to fetch/refresh data
@@ -254,9 +260,29 @@ export default function RocksPage() {
       const transformedRocks = rocksData.map(rock => transformRock(rock, engagementsData))
       setRocks(transformedRocks)
 
-      // Auto-expand first rock only on initial load (when showLoading is true)
+      // Auto-expand logic on initial load
       if (showLoading && transformedRocks.length > 0 && expandedRocks.length === 0) {
-        setExpandedRocks([transformedRocks[0].id])
+        // If URL has a rock param and we haven't handled it yet, expand that rock
+        if (rockIdFromUrl && !hasHandledUrlRock) {
+          const targetRock = transformedRocks.find(r => r.id === rockIdFromUrl)
+          if (targetRock) {
+            setExpandedRocks([targetRock.id])
+            setHasHandledUrlRock(true)
+            // Scroll to the rock after a short delay
+            setTimeout(() => {
+              const element = document.getElementById(`rock-${rockIdFromUrl}`)
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }, 100)
+          } else {
+            // Rock not found, fall back to first rock
+            setExpandedRocks([transformedRocks[0].id])
+          }
+        } else if (!hasHandledUrlRock) {
+          // No URL param, expand first rock
+          setExpandedRocks([transformedRocks[0].id])
+        }
       }
     } catch (err) {
       console.error('Failed to fetch rocks:', err)
@@ -552,6 +578,7 @@ export default function RocksPage() {
             return (
               <Card
                 key={rock.id}
+                id={`rock-${rock.id}`}
                 className={cn(
                   "overflow-hidden transition-all",
                   isExpanded && "shadow-lg"
@@ -865,7 +892,7 @@ export default function RocksPage() {
                           onClick={() => openKeyResultDialog(rock.id, rock.title)}
                         >
                           <Plus className="h-4 w-4" />
-                          Add Signal
+                          Add Key Result
                         </Button>
                       </div>
 
@@ -920,9 +947,9 @@ export default function RocksPage() {
                             <p className="text-sm font-medium text-amber-900">No Key Results Yet</p>
                             <p className="text-xs text-amber-700 mt-1 max-w-sm mx-auto">
                               Key Results are the measurable outcomes that prove this Rock is on track.
-                              Add signals like &quot;3 POCs completed&quot; or &quot;API docs published&quot;.
+                              Add outcomes like &quot;3 POCs completed&quot; or &quot;API docs published&quot;.
                               <br />
-                              <strong className="mt-2 block">Commitments require a Build Signal.</strong>
+                              <strong className="mt-2 block">Commitments require a Key Result.</strong>
                             </p>
                             <Button
                               variant="outline"
@@ -931,7 +958,7 @@ export default function RocksPage() {
                               onClick={() => openKeyResultDialog(rock.id, rock.title)}
                             >
                               <Plus className="h-4 w-4" />
-                              Add First Signal
+                              Add First Key Result
                             </Button>
                           </div>
                         )
@@ -1058,7 +1085,7 @@ export default function RocksPage() {
         />
       )}
 
-      {/* Create Build Signal Dialog */}
+      {/* Create Key Result Dialog */}
       {keyResultRock && (
         <CreateKeyResultDialog
           open={isKeyResultDialogOpen}
@@ -1072,5 +1099,42 @@ export default function RocksPage() {
         />
       )}
     </div>
+  )
+}
+
+// Loading fallback for Suspense
+function RocksPageLoading() {
+  return (
+    <div className="min-h-screen bg-white">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm uppercase tracking-wider mb-1">
+              <Calendar className="h-4 w-4" />
+              Q1 2026
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Rocks</h1>
+            <p className="text-sm text-slate-500">
+              Track your quarterly Rocks, supporting projects, and Key Results.
+            </p>
+          </div>
+        </div>
+      </header>
+      <div className="p-8">
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <span className="ml-3 text-slate-500">Loading rocks...</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main page export with Suspense boundary
+export default function RocksPage() {
+  return (
+    <Suspense fallback={<RocksPageLoading />}>
+      <RocksPageContent />
+    </Suspense>
   )
 }
