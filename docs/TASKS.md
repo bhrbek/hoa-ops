@@ -1014,8 +1014,85 @@ Add to `.github/workflows/ci.yml`:
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 13: Automated Testing | ✅ Complete | 153 tests covering modals, pages, auth/RLS |
+| Phase 14: Terminology & UX Polish | ✅ Complete | Key Result rename, clickable Vista cards, deep linking |
 
-**All 13 phases complete! Application is production-ready.**
+**All 14 phases complete! Application is production-ready.**
+
+---
+
+## Phase 14: Terminology & UX Polish (2026-01-07)
+
+### Terminology Rename: Build Signal → Key Result
+Aligned terminology with OKR (Objectives & Key Results) methodology:
+- **Rock** = Objective (quarterly strategic commitment)
+- **Key Result** = Measurable outcome that indicates Rock success
+
+| Layer | Changes |
+|-------|---------|
+| Database | Migration 020: Renamed `build_signals` → `key_results`, `build_signal_id` → `key_result_id` |
+| TypeScript | `BuildSignal` → `KeyResult`, `BuildSignalStatus` → `KeyResultStatus` |
+| Server Actions | Renamed `build-signals.ts` → `key-results.ts`, all functions updated |
+| UI Components | `CreateBuildSignalDialog` → `CreateKeyResultDialog`, all labels updated |
+| Test Utils | Updated mock factories and types |
+
+**Files Created:**
+- `supabase/migrations/020_rename_build_signals_to_key_results.sql`
+- `src/app/actions/key-results.ts` (renamed from build-signals.ts)
+- `src/components/climb/create-key-result-dialog.tsx` (renamed from create-build-signal-dialog.tsx)
+
+**Files Modified:**
+- `src/types/supabase.ts`, `src/types/database.ts` - Type renames
+- `src/app/actions/commitments.ts`, `src/app/actions/rocks.ts` - Reference updates
+- `src/app/rocks/page.tsx`, `src/app/commitment-board/page.tsx` - UI updates
+- `src/components/commitment/create-commitment-dialog.tsx` - Label updates
+- `src/test/test-utils.tsx` - Mock factory updates
+
+### Vista Cards Clickable
+Made all Vista dashboard cards navigate to source data:
+
+| Card | Destination |
+|------|-------------|
+| Revenue Influenced | `/reports` |
+| Engagements | `/stream` |
+| Rock Velocity | `/rocks` |
+| Workshops Delivered | `/stream?type=workshop` |
+| Active Rocks cards | `/rocks?rock={id}` |
+| Recent Logs items | `/stream` |
+
+Added hover states with visual feedback (color transitions, shadows).
+Added "View All" button to My Stream section header.
+
+### Rock Query Param Handling
+Rocks page now supports deep linking via URL query params:
+- Navigate to `/rocks?rock={id}` to auto-expand a specific rock
+- Rock scrolls into view on page load
+- Added Suspense boundary for SSR compatibility with `useSearchParams`
+
+**Files Modified:**
+- `src/app/page.tsx` - Added Link wrappers and href properties to scorecard
+- `src/app/rocks/page.tsx` - Added query param handling, Suspense wrapper
+
+### Development Skills Added
+Created `.claude/skills/` with workflow automation:
+- `/debug-rls` - Test RLS permissions for any user
+- `/check-deploy` - Verify deployment status
+- `/confidence-check` - 95% confidence enforcement checklist
+- `/new-dialog` - Dialog component template
+- `/new-action` - Server action template
+- `/db-inspect` - Database exploration commands
+- `/migration` - Migration helper guide
+
+### Scripts Added
+- `scripts/debug-rls.sh` - Simulate RLS as any user
+- `scripts/check-deploy.sh` - Check local vs production status
+
+### Version History (2026-01-07)
+| Version | Changes |
+|---------|---------|
+| v5 | Added Key Results UI to Rocks page |
+| v6 | Renamed Build Signal → Key Result across codebase |
+| v7 | Made Vista cards clickable to source data |
+| v8 | Added rock query param handling on Rocks page |
 
 ---
 

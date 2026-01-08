@@ -56,10 +56,10 @@ Failure to respect these constraints is a functional bug.
 - Every Rock MUST define a Perfect Outcome (max 3 sentences).
 - Rock success is binary: the capability exists or it does not.
 
-### 3. Rock Health Comes ONLY From Build Signals
-- Rock health is derived from Build Signals (measurable outcomes).
+### 3. Rock Health Comes ONLY From Key Results
+- Rock health is derived from Key Results (measurable outcomes).
 - Revenue, GP, engagement count, or velocity MUST NEVER change Rock health.
-- A Rock with missed Build Signals is unhealthy, regardless of business performance.
+- A Rock with missed Key Results is unhealthy, regardless of business performance.
 
 ### 4. Projects Are Internal Capability-Build Efforts
 - Projects are not customer delivery.
@@ -72,7 +72,7 @@ Failure to respect these constraints is a functional bug.
 
 ### 5. Commitments Drive Weekly Execution
 - Commitments MUST link to a Project (required)
-- Commitments MUST link to a Build Signal (required)
+- Commitments MUST link to a Key Result (required)
 - Commitments NEVER link to Engagements
 - Finishable in ≤7 days with binary "Done means..." definition
 
@@ -99,7 +99,7 @@ There are two distinct lenses that MUST NOT be merged:
 
 ### Strategy Execution Lens
 - Rocks
-- Build Signals
+- Key Results
 - Projects
 - Commitments
 - Capacity (Headwaters)
@@ -239,8 +239,8 @@ Format: `XXX_description.sql` where XXX is 3-digit number (001, 002, etc.)
 ## FAILURE MODES TO PREVENT
 
 - Treating engagement volume as progress
-- Allowing Rocks without Build Signals
-- Allowing Commitments without Project + Build Signal links
+- Allowing Rocks without Key Results
+- Allowing Commitments without Project + Key Result links
 - Allowing revenue metrics to influence Rock health
 - Overbooking capacity beyond the Jar
 - Hard deleting any primary table records
@@ -384,7 +384,7 @@ Current migration files (in order):
 | 002_rls_policies.sql | Initial RLS policies |
 | 003_seed_data.sql | Reference data |
 | 004_create_helper_functions.sql | RLS helper functions |
-| 005_create_build_signals.sql | Build signals table |
+| 005_create_build_signals.sql | Key results table (originally build_signals) |
 | 006_fix_commitments_table.sql | Commitment model redesign |
 | 007_create_rls_policies.sql | Team-scoped RLS policies |
 | 008_deprecate_swarms.sql | Deprecate swarms → enablement_events |
@@ -396,6 +396,7 @@ Current migration files (in order):
 | 014_fix_team_memberships_rls.sql | Fix circular dependency in team_memberships |
 | 015_fix_all_rls_circular_deps.sql | Fix circular deps in org_admins, teams, orgs |
 | 016_fix_teams_select_policy.sql | Fix column reference bug in teams_select |
+| 020_rename_build_signals_to_key_results.sql | Rename build_signals → key_results |
 
 **To push new migrations:**
 ```bash
@@ -633,7 +634,7 @@ import {
   createMockEngagement,
   createMockRock,
   createMockProject,
-  createMockBuildSignal
+  createMockKeyResult
 } from '@/test/test-utils'
 
 const mockRock = createMockRock({
@@ -689,6 +690,51 @@ claude mcp list
 claude mcp add <name> -- <command>
 ```
 
+### Available Skills
+
+Skills are documented workflows in `.claude/skills/`. Use them by name or run the associated commands.
+
+| Skill | Purpose | Command |
+|-------|---------|---------|
+| `/test` | Run modal and functional tests | `npm run test:run` |
+| `/build` | Build and verify | `npm run build` |
+| `/lint` | Code quality checks | `npm run lint` |
+| `/typecheck` | TypeScript checking | `npx tsc --noEmit` |
+| `/db` | Database operations | `supabase db push --linked` |
+| `/debug-rls` | RLS permission debugging | `./scripts/debug-rls.sh` |
+| `/deploy-check` | Verify deployment status | `./scripts/check-deploy.sh` |
+| `/commit` | Safe git commits | See skill for checklist |
+| `/pr` | Create pull requests | `gh pr create` |
+| `/review` | Production readiness review | Invoke via `/review` |
+| `/startup` | Session initialization | Load memory + check state |
+| `/migration` | Database migration guide | See skill for steps |
+| `/new-dialog` | Dialog component template | See skill for pattern |
+| `/new-action` | Server action template | See skill for pattern |
+| `/confidence-check` | 95% confidence checklist | See skill for checklist |
+
+### Automatic Skill Triggers
+
+When these events occur, run the corresponding skill:
+
+| Event | Run Skill | Why |
+|-------|-----------|-----|
+| Session start | `/startup` | Load memory graph, check version, review tasks |
+| Before commit | `/test`, `/build` | Ensure code works before committing |
+| After schema change | `/typecheck` | Catch type errors from renamed/removed columns |
+| Permission errors | `/debug-rls` | Diagnose RLS policy issues |
+| Before PR | `/review` | Production readiness check |
+| After migration | `/db` | Verify migration applied correctly |
+| Build failures | `/typecheck` | Isolate TypeScript vs runtime errors |
+
+### Pre-Commit Checklist (Automated)
+
+Before every commit, run this sequence:
+```bash
+npm run lint && npm run build && npm run test:run
+```
+
+If any step fails, fix before committing.
+
 ### Task Tracking
 
 **Primary task file:** `docs/TASKS.md`
@@ -710,11 +756,17 @@ This file contains:
 **Headwaters** is a strategy execution system for TSA organizations.
 
 **Current Focus Areas:**
-1. Fix RLS/permission issues in all views
-2. Wire up all pages to real data
-3. Add rich text editing for Rocks
-4. Make Vista dashboard cards clickable
-5. Complete admin settings functionality
+1. ~~Fix RLS/permission issues in all views~~ ✅ Complete
+2. ~~Wire up all pages to real data~~ ✅ Complete
+3. ~~Add rich text editing for Rocks~~ ✅ Complete (TipTap editor)
+4. ~~Make Vista dashboard cards clickable~~ ✅ Complete
+5. ~~Complete admin settings functionality~~ ✅ Complete
+6. ~~Rename Build Signal → Key Result~~ ✅ Complete (OKR terminology)
+7. ~~Deep linking support for Rocks~~ ✅ Complete
+
+**Terminology (OKR alignment):**
+- **Rock** = Objective (quarterly strategic commitment)
+- **Key Result** = Measurable outcome that indicates Rock success
 
 ### Quick State Check Commands
 
