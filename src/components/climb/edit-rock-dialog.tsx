@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import {
   Select,
   SelectContent,
@@ -85,7 +85,9 @@ export function EditRockDialog({ open, onOpenChange, rock, onSave }: EditRockDia
     setWorstOutcome(rock.worst_outcome || "")
   }, [rock])
 
-  const isValid = title.trim() && owner && perfectOutcome.trim()
+  // Strip HTML tags to check if there's actual content
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim()
+  const isValid = title.trim() && owner && stripHtml(perfectOutcome)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,7 +120,7 @@ export function EditRockDialog({ open, onOpenChange, rock, onSave }: EditRockDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-white">
@@ -212,32 +214,30 @@ export function EditRockDialog({ open, onOpenChange, rock, onSave }: EditRockDia
 
           {/* Perfect Outcome */}
           <div className="space-y-2">
-            <Label htmlFor="edit-rock-outcome">
+            <Label>
               Perfect Outcome <span className="text-red-500">*</span>
             </Label>
-            <Textarea
-              id="edit-rock-outcome"
-              placeholder="Describe the ideal end state. Be specific with metrics."
+            <RichTextEditor
               value={perfectOutcome}
-              onChange={(e) => setPerfectOutcome(e.target.value)}
-              rows={4}
+              onChange={setPerfectOutcome}
+              placeholder="Describe the ideal end state. Be specific with metrics."
+              minHeight="200px"
             />
             <p className="text-xs text-slate-500">
-              The perfect outcome is your North Star. Make it measurable.
+              The perfect outcome is your North Star. Make it measurable. Use formatting, images, and tables to clarify your vision.
             </p>
           </div>
 
           {/* Worst Outcome (optional) */}
           <div className="space-y-2">
-            <Label htmlFor="edit-rock-worst-outcome">
+            <Label>
               Worst Outcome <span className="text-slate-400">(optional)</span>
             </Label>
-            <Textarea
-              id="edit-rock-worst-outcome"
-              placeholder="What does failure look like? This helps identify risks early."
+            <RichTextEditor
               value={worstOutcome}
-              onChange={(e) => setWorstOutcome(e.target.value)}
-              rows={2}
+              onChange={setWorstOutcome}
+              placeholder="What does failure look like? This helps identify risks early."
+              minHeight="120px"
             />
           </div>
 

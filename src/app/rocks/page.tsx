@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
+import { RichTextDisplay } from "@/components/ui/rich-text-editor"
 import { useTeam } from "@/contexts/team-context"
 import { getActiveRocks, createRock, updateRock, deleteRock } from "@/app/actions/rocks"
 import { createProject, updateProject } from "@/app/actions/projects"
@@ -685,7 +686,10 @@ export default function RocksPage() {
                           <CheckCircle2 className="h-4 w-4" />
                           Perfect Outcome
                         </div>
-                        <p className="text-sm text-slate-700">{rock.perfectOutcome}</p>
+                        <RichTextDisplay
+                          content={rock.perfectOutcome}
+                          className="text-sm text-slate-700"
+                        />
                       </div>
 
                       {/* Worst Outcome */}
@@ -694,7 +698,10 @@ export default function RocksPage() {
                           <AlertTriangle className="h-4 w-4" />
                           Worst Outcome
                         </div>
-                        <p className="text-sm text-slate-700">{rock.worstOutcome}</p>
+                        <RichTextDisplay
+                          content={rock.worstOutcome || ""}
+                          className="text-sm text-slate-700"
+                        />
                       </div>
                     </div>
 
