@@ -172,6 +172,7 @@ export default function VistaPage() {
       format: "currency" as const,
       change: "this quarter",
       icon: DollarSign,
+      href: "/reports",
     },
     {
       title: "Engagements",
@@ -179,13 +180,15 @@ export default function VistaPage() {
       format: "number" as const,
       change: "active",
       icon: Users,
+      href: "/stream",
     },
     {
       title: "Rock Velocity",
-      value: 72, // Placeholder - needs build signal aggregation
+      value: 72, // Placeholder - needs key result aggregation
       format: "percent" as const,
       change: "avg progress",
       icon: TrendingUp,
+      href: "/rocks",
     },
     {
       title: "Workshops Delivered",
@@ -193,6 +196,7 @@ export default function VistaPage() {
       format: "number" as const,
       change: "this quarter",
       icon: Presentation,
+      href: "/stream?type=workshop",
     },
   ], [stats])
 
@@ -334,27 +338,29 @@ export default function VistaPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {scorecard.map((metric) => (
-              <Card key={metric.title} className="relative overflow-hidden hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">{metric.title}</p>
-                      <p className="text-3xl font-bold text-emerald-600 mt-2">
-                        {metric.format === "currency"
-                          ? formatCompactCurrency(metric.value)
-                          : metric.format === "percent"
-                            ? `${metric.value}%`
-                            : metric.value}
-                      </p>
-                      <p className="text-xs text-slate-400 font-medium mt-1">{metric.change}</p>
+              <Link key={metric.title} href={metric.href}>
+                <Card className="relative overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-500 group-hover:text-slate-700 transition-colors">{metric.title}</p>
+                        <p className="text-3xl font-bold text-emerald-600 mt-2">
+                          {metric.format === "currency"
+                            ? formatCompactCurrency(metric.value)
+                            : metric.format === "percent"
+                              ? `${metric.value}%`
+                              : metric.value}
+                        </p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">{metric.change}</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-slate-100 transition-colors">
+                        <metric.icon className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                      </div>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-50">
-                      <metric.icon className="h-5 w-5 text-slate-400" />
-                    </div>
-                  </div>
-                </CardContent>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-300" />
-              </Card>
+                  </CardContent>
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-300" />
+                </Card>
+              </Link>
             ))}
           </div>
         </section>
@@ -384,58 +390,60 @@ export default function VistaPage() {
             ) : (
             <div className="space-y-4">
               {rocks.map((rock) => (
-                <Card key={rock.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className={`h-8 w-8 ${rock.owner.color}`}>
-                          <AvatarFallback className={rock.owner.color}>{rock.owner.initials}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{rock.title}</h3>
-                          <p className="text-xs text-slate-500">Owner: {rock.owner.name}</p>
+                <Link key={rock.id} href={`/rocks?rock=${rock.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className={`h-8 w-8 ${rock.owner.color}`}>
+                            <AvatarFallback className={rock.owner.color}>{rock.owner.initials}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{rock.title}</h3>
+                            <p className="text-xs text-slate-500">Owner: {rock.owner.name}</p>
+                          </div>
+                        </div>
+                        {getStatusBadge(rock.status)}
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-slate-500">Progress</span>
+                          <span className="font-semibold text-slate-700">{rock.progress}%</span>
+                        </div>
+                        <Progress
+                          value={rock.progress}
+                          className="h-2"
+                          indicatorClassName={
+                            rock.status === "at_risk" || rock.status === "At Risk" ? "bg-amber-500" :
+                            rock.progress >= 80 ? "bg-emerald-500" : "bg-blue-500"
+                          }
+                        />
+                      </div>
+
+                      {/* Nested Projects */}
+                      {rock.projects.length > 0 && (
+                      <div className="border-t border-slate-100 pt-3">
+                        <p className="text-xs font-medium text-slate-400 uppercase mb-2">Projects</p>
+                        <div className="space-y-2">
+                          {rock.projects.map((project) => (
+                            <div key={project.id} className="flex items-center gap-2 text-sm">
+                              {project.status === "Done" ? (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                              ) : (
+                                <Circle className="h-4 w-4 text-slate-300" />
+                              )}
+                              <span className={project.status === "Done" ? "text-slate-400 line-through" : "text-slate-700"}>
+                                {project.title}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      {getStatusBadge(rock.status)}
-                    </div>
-
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-slate-500">Progress</span>
-                        <span className="font-semibold text-slate-700">{rock.progress}%</span>
-                      </div>
-                      <Progress
-                        value={rock.progress}
-                        className="h-2"
-                        indicatorClassName={
-                          rock.status === "at_risk" || rock.status === "At Risk" ? "bg-amber-500" :
-                          rock.progress >= 80 ? "bg-emerald-500" : "bg-blue-500"
-                        }
-                      />
-                    </div>
-
-                    {/* Nested Projects */}
-                    {rock.projects.length > 0 && (
-                    <div className="border-t border-slate-100 pt-3">
-                      <p className="text-xs font-medium text-slate-400 uppercase mb-2">Projects</p>
-                      <div className="space-y-2">
-                        {rock.projects.map((project) => (
-                          <div key={project.id} className="flex items-center gap-2 text-sm">
-                            {project.status === "Done" ? (
-                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            ) : (
-                              <Circle className="h-4 w-4 text-slate-300" />
-                            )}
-                            <span className={project.status === "Done" ? "text-slate-400 line-through" : "text-slate-700"}>
-                              {project.title}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
             )}
@@ -529,6 +537,11 @@ export default function VistaPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">My Stream</h2>
+            <Link href="/stream">
+              <Button variant="ghost" size="sm" className="text-blue-600 gap-1">
+                View All <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
           <Card>
             <Tabs defaultValue="logs" className="w-full">
@@ -549,25 +562,26 @@ export default function VistaPage() {
                   ) : (
                   <div className="space-y-3">
                     {recentLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-slate-50">
-                            <Users className="h-4 w-4 text-slate-500" />
+                      <Link key={log.id} href="/stream">
+                        <div
+                          className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-blue-100 transition-colors">
+                              <Users className="h-4 w-4 text-slate-500 group-hover:text-blue-600 transition-colors" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{log.customer}</p>
+                              <p className="text-xs text-slate-500">{log.type} • {log.date}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-900">{log.customer}</p>
-                            <p className="text-xs text-slate-500">{log.type} • {log.date}</p>
-                          </div>
+                          {log.revenue > 0 && (
+                            <span className="text-sm font-semibold text-emerald-600">
+                              {formatCompactCurrency(log.revenue)}
+                            </span>
+                          )}
                         </div>
-                        {log.revenue > 0 && (
-                          <span className="text-sm font-semibold text-emerald-600">
-                            {formatCompactCurrency(log.revenue)}
-                          </span>
-                        )}
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   )}
