@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useTeam } from "@/contexts/team-context"
-import type { Rock, Project, BuildSignal } from "@/types/supabase"
+import type { Rock, Project, KeyResult } from "@/types/supabase"
 
 interface CreateCommitmentDialogProps {
   open: boolean
@@ -33,7 +33,7 @@ interface CreateCommitmentDialogProps {
 
 interface CreateCommitmentData {
   project_id: string
-  build_signal_id: string
+  key_result_id: string
   definition_of_done: string
   week_of?: string
   notes?: string
@@ -53,7 +53,7 @@ export function CreateCommitmentDialog({
 
   const [selectedRockId, setSelectedRockId] = React.useState<string>("")
   const [selectedProjectId, setSelectedProjectId] = React.useState<string>("")
-  const [selectedBuildSignalId, setSelectedBuildSignalId] = React.useState<string>("")
+  const [selectedKeyResultId, setSelectedKeyResultId] = React.useState<string>("")
   const [definitionOfDone, setDefinitionOfDone] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [isSaving, setIsSaving] = React.useState(false)
@@ -61,7 +61,7 @@ export function CreateCommitmentDialog({
   // Data from server
   const [rocks, setRocks] = React.useState<Rock[]>([])
   const [projects, setProjects] = React.useState<ProjectWithRock[]>([])
-  const [buildSignals, setBuildSignals] = React.useState<BuildSignal[]>([])
+  const [keyResults, setKeyResults] = React.useState<KeyResult[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
 
   // Load reference data when dialog opens
@@ -97,25 +97,25 @@ export function CreateCommitmentDialog({
     }
   }
 
-  // Load build signals when rock changes
+  // Load key results when rock changes
   React.useEffect(() => {
-    async function loadBuildSignals() {
+    async function loadKeyResults() {
       if (!selectedRockId) {
-        setBuildSignals([])
+        setKeyResults([])
         return
       }
 
       try {
-        const { getBuildSignals } = await import("@/app/actions/build-signals")
-        const signalsData = await getBuildSignals(selectedRockId)
-        setBuildSignals(signalsData)
+        const { getKeyResults } = await import("@/app/actions/key-results")
+        const resultsData = await getKeyResults(selectedRockId)
+        setKeyResults(resultsData)
       } catch (error) {
-        console.error("Failed to load build signals:", error)
-        setBuildSignals([])
+        console.error("Failed to load key results:", error)
+        setKeyResults([])
       }
     }
 
-    loadBuildSignals()
+    loadKeyResults()
   }, [selectedRockId])
 
   // Filter projects by selected rock
@@ -126,12 +126,12 @@ export function CreateCommitmentDialog({
   // Reset project and build signal when rock changes
   React.useEffect(() => {
     setSelectedProjectId("")
-    setSelectedBuildSignalId("")
+    setSelectedKeyResultId("")
   }, [selectedRockId])
 
   const isValid =
     selectedProjectId &&
-    selectedBuildSignalId &&
+    selectedKeyResultId &&
     definitionOfDone.trim() &&
     activeTeam
 
@@ -143,7 +143,7 @@ export function CreateCommitmentDialog({
 
     const data: CreateCommitmentData = {
       project_id: selectedProjectId,
-      build_signal_id: selectedBuildSignalId,
+      key_result_id: selectedKeyResultId,
       definition_of_done: definitionOfDone,
       week_of: weekOf,
       notes: notes || undefined,
@@ -170,7 +170,7 @@ export function CreateCommitmentDialog({
   function resetForm() {
     setSelectedRockId("")
     setSelectedProjectId("")
-    setSelectedBuildSignalId("")
+    setSelectedKeyResultId("")
     setDefinitionOfDone("")
     setNotes("")
   }
@@ -186,7 +186,7 @@ export function CreateCommitmentDialog({
             <div>
               <DialogTitle>Create New Commitment</DialogTitle>
               <DialogDescription>
-                Make a weekly commitment linked to a project and build signal.
+                Make a weekly commitment linked to a project and key result.
               </DialogDescription>
             </div>
           </div>
@@ -246,26 +246,26 @@ export function CreateCommitmentDialog({
             </Select>
           </div>
 
-          {/* Build Signal Selection */}
+          {/* Key Result Selection */}
           <div className="space-y-2">
-            <Label htmlFor="commitment-signal">Build Signal</Label>
+            <Label htmlFor="commitment-kr">Key Result</Label>
             <Select
-              value={selectedBuildSignalId}
-              onValueChange={setSelectedBuildSignalId}
+              value={selectedKeyResultId}
+              onValueChange={setSelectedKeyResultId}
               disabled={!selectedRockId}
             >
-              <SelectTrigger id="commitment-signal">
-                <SelectValue placeholder={selectedRockId ? "Select a build signal..." : "Select a rock first"} />
+              <SelectTrigger id="commitment-kr">
+                <SelectValue placeholder={selectedRockId ? "Select a key result..." : "Select a rock first"} />
               </SelectTrigger>
               <SelectContent>
-                {buildSignals.length === 0 ? (
+                {keyResults.length === 0 ? (
                   <div className="py-2 px-3 text-sm text-slate-500">
-                    {selectedRockId ? "No build signals for this rock" : "Select a rock first"}
+                    {selectedRockId ? "No key results for this rock" : "Select a rock first"}
                   </div>
                 ) : (
-                  buildSignals.map((signal) => (
-                    <SelectItem key={signal.id} value={signal.id}>
-                      {signal.title}
+                  keyResults.map((kr) => (
+                    <SelectItem key={kr.id} value={kr.id}>
+                      {kr.title}
                     </SelectItem>
                   ))
                 )}

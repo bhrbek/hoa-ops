@@ -33,7 +33,7 @@ export async function getCommitments(
     .select(`
       *,
       project:projects(id, title, rock_id),
-      build_signal:build_signals(id, title, status),
+      key_result:key_results(id, title, status),
       owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('team_id', teamId)
@@ -79,7 +79,7 @@ export async function getMyCommitments(weekOf?: string): Promise<CommitmentWithR
     .select(`
       *,
       project:projects(id, title, rock_id),
-      build_signal:build_signals(id, title, status),
+      key_result:key_results(id, title, status),
       owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('owner_id', user.id)
@@ -112,7 +112,7 @@ export async function getCommitment(commitmentId: string): Promise<CommitmentWit
     .select(`
       *,
       project:projects(id, title, rock_id),
-      build_signal:build_signals(id, title, status),
+      key_result:key_results(id, title, status),
       owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('id', commitmentId)
@@ -136,11 +136,11 @@ export async function getCommitment(commitmentId: string): Promise<CommitmentWit
 
 /**
  * Create a new commitment
- * Commitments MUST be linked to both a project and a build signal
+ * Commitments MUST be linked to both a project and a key result
  */
 export async function createCommitment(data: {
   project_id: string
-  build_signal_id: string
+  key_result_id: string
   definition_of_done: string
   week_of?: string
   notes?: string
@@ -161,16 +161,16 @@ export async function createCommitment(data: {
 
   await requireTeamAccess(project.team_id)
 
-  // Validate build signal belongs to the same rock - use maybeSingle() as signal might not exist
-  const { data: signal } = await (supabase as any)
-    .from('build_signals')
+  // Validate key result belongs to the same rock - use maybeSingle() as it might not exist
+  const { data: keyResult } = await (supabase as any)
+    .from('key_results')
     .select('rock_id')
-    .eq('id', data.build_signal_id)
+    .eq('id', data.key_result_id)
     .maybeSingle()
 
-  if (!signal) throw new Error('Build signal not found')
-  if (signal.rock_id !== project.rock_id) {
-    throw new Error('Build signal must belong to the same rock as the project')
+  if (!keyResult) throw new Error('Key result not found')
+  if (keyResult.rock_id !== project.rock_id) {
+    throw new Error('Key result must belong to the same rock as the project')
   }
 
   const weekOf = data.week_of || getWeekOf(new Date())
@@ -181,7 +181,7 @@ export async function createCommitment(data: {
       team_id: project.team_id,
       owner_id: user.id,
       project_id: data.project_id,
-      build_signal_id: data.build_signal_id,
+      key_result_id: data.key_result_id,
       rock_id: project.rock_id,
       definition_of_done: data.definition_of_done,
       week_of: weekOf,
@@ -297,7 +297,7 @@ export async function carryCommitment(
       team_id: original.team_id,
       owner_id: original.owner_id,
       project_id: original.project_id,
-      build_signal_id: original.build_signal_id,
+      key_result_id: original.key_result_id,
       rock_id: original.rock_id,
       definition_of_done: original.definition_of_done,
       week_of: nextWeek,
@@ -355,7 +355,7 @@ export async function splitCommitment(
     team_id: original.team_id,
     owner_id: original.owner_id,
     project_id: original.project_id,
-    build_signal_id: original.build_signal_id,
+    key_result_id: original.key_result_id,
     rock_id: original.rock_id,
     definition_of_done: c.definition_of_done,
     week_of: original.week_of, // Keep same week
@@ -444,7 +444,7 @@ export async function getPendingCarryovers(teamId: string): Promise<CommitmentWi
     .select(`
       *,
       project:projects(id, title, rock_id),
-      build_signal:build_signals(id, title, status),
+      key_result:key_results(id, title, status),
       owner:profiles!commitments_owner_id_fkey(id, full_name, avatar_url)
     `)
     .eq('team_id', teamId)

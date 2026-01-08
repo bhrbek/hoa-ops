@@ -39,15 +39,15 @@ import { RichTextDisplay } from "@/components/ui/rich-text-editor"
 import { useTeam } from "@/contexts/team-context"
 import { getActiveRocks, createRock, updateRock, deleteRock } from "@/app/actions/rocks"
 import { createProject, updateProject } from "@/app/actions/projects"
-import { getBuildSignals } from "@/app/actions/build-signals"
+import { getKeyResults } from "@/app/actions/key-results"
 import { getActiveEngagements } from "@/app/actions/engagements"
 import { CreateRockDialog } from "@/components/climb/create-rock-dialog"
 import { CreateProjectDialog } from "@/components/climb/create-project-dialog"
-import { CreateBuildSignalDialog } from "@/components/climb/create-build-signal-dialog"
+import { CreateKeyResultDialog } from "@/components/climb/create-key-result-dialog"
 import { EditRockDialog } from "@/components/climb/edit-rock-dialog"
 import { EditProjectDialog } from "@/components/climb/edit-project-dialog"
 import { toast } from "sonner"
-import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus, Project, ProjectStatus, BuildSignal } from "@/types/supabase"
+import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus, Project, ProjectStatus, KeyResult } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -223,9 +223,9 @@ export default function RocksPage() {
   const [selectedRockId, setSelectedRockId] = React.useState<string | undefined>()
   const [editingRock, setEditingRock] = React.useState<Rock | null>(null)
   const [editingProject, setEditingProject] = React.useState<{ project: Project; rockTitle: string } | null>(null)
-  const [isBuildSignalDialogOpen, setIsBuildSignalDialogOpen] = React.useState(false)
-  const [buildSignalRock, setBuildSignalRock] = React.useState<{ id: string; title: string } | null>(null)
-  const [buildSignalsMap, setBuildSignalsMap] = React.useState<Map<string, BuildSignal[]>>(new Map())
+  const [isKeyResultDialogOpen, setIsKeyResultDialogOpen] = React.useState(false)
+  const [keyResultRock, setKeyResultRock] = React.useState<{ id: string; title: string } | null>(null)
+  const [keyResultsMap, setKeyResultsMap] = React.useState<Map<string, KeyResult[]>>(new Map())
   const { activeTeam, isLoading } = useTeam()
 
   // Function to fetch/refresh data
@@ -391,21 +391,21 @@ export default function RocksPage() {
   }
 
   // Open build signal dialog for a specific rock
-  const openBuildSignalDialog = (rockId: string, rockTitle: string) => {
-    setBuildSignalRock({ id: rockId, title: rockTitle })
-    setIsBuildSignalDialogOpen(true)
+  const openKeyResultDialog = (rockId: string, rockTitle: string) => {
+    setKeyResultRock({ id: rockId, title: rockTitle })
+    setIsKeyResultDialogOpen(true)
   }
 
-  // Fetch build signals when a rock is expanded
+  // Fetch key results when a rock is expanded
   React.useEffect(() => {
     async function fetchBuildSignals() {
       for (const rockId of expandedRocks) {
-        if (!buildSignalsMap.has(rockId)) {
+        if (!keyResultsMap.has(rockId)) {
           try {
-            const signals = await getBuildSignals(rockId)
-            setBuildSignalsMap(prev => new Map(prev).set(rockId, signals))
+            const signals = await getKeyResults(rockId)
+            setKeyResultsMap(prev => new Map(prev).set(rockId, signals))
           } catch (err) {
-            console.error(`Failed to fetch build signals for rock ${rockId}:`, err)
+            console.error(`Failed to fetch key results for rock ${rockId}:`, err)
           }
         }
       }
@@ -415,13 +415,13 @@ export default function RocksPage() {
     }
   }, [expandedRocks])
 
-  // Refresh build signals for a rock after creating a new one
-  const refreshBuildSignals = async (rockId: string) => {
+  // Refresh key results for a rock after creating a new one
+  const refreshKeyResults = async (rockId: string) => {
     try {
-      const signals = await getBuildSignals(rockId)
-      setBuildSignalsMap(prev => new Map(prev).set(rockId, signals))
+      const signals = await getKeyResults(rockId)
+      setKeyResultsMap(prev => new Map(prev).set(rockId, signals))
     } catch (err) {
-      console.error(`Failed to refresh build signals for rock ${rockId}:`, err)
+      console.error(`Failed to refresh key results for rock ${rockId}:`, err)
     }
   }
 
@@ -464,7 +464,7 @@ export default function RocksPage() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Rocks</h1>
             <p className="text-sm text-slate-500">
-              Track your quarterly Rocks, supporting projects, and Build Signals.
+              Track your quarterly Rocks, supporting projects, and Key Results.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -846,13 +846,13 @@ export default function RocksPage() {
                       </div>
                     </div>
 
-                    {/* Build Signals Section */}
+                    {/* Key Results Section */}
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                             <Target className="h-4 w-4" />
-                            Build Signals
+                            Key Results
                           </h4>
                           <p className="text-xs text-slate-400 mt-1">
                             Measurable outcomes that define success. Commitments link to these.
@@ -862,7 +862,7 @@ export default function RocksPage() {
                           variant="ghost"
                           size="sm"
                           className="text-amber-600 gap-1"
-                          onClick={() => openBuildSignalDialog(rock.id, rock.title)}
+                          onClick={() => openKeyResultDialog(rock.id, rock.title)}
                         >
                           <Plus className="h-4 w-4" />
                           Add Signal
@@ -870,7 +870,7 @@ export default function RocksPage() {
                       </div>
 
                       {(() => {
-                        const signals = buildSignalsMap.get(rock.id) || []
+                        const signals = keyResultsMap.get(rock.id) || []
                         return signals.length > 0 ? (
                           <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
                             {signals.map((signal) => (
@@ -917,9 +917,9 @@ export default function RocksPage() {
                         ) : (
                           <div className="bg-white rounded-lg border border-dashed border-amber-300 bg-amber-50/30 p-6 text-center">
                             <Target className="h-8 w-8 text-amber-400 mx-auto mb-2" />
-                            <p className="text-sm font-medium text-amber-900">No Build Signals Yet</p>
+                            <p className="text-sm font-medium text-amber-900">No Key Results Yet</p>
                             <p className="text-xs text-amber-700 mt-1 max-w-sm mx-auto">
-                              Build Signals are the measurable outcomes that prove this Rock is on track.
+                              Key Results are the measurable outcomes that prove this Rock is on track.
                               Add signals like &quot;3 POCs completed&quot; or &quot;API docs published&quot;.
                               <br />
                               <strong className="mt-2 block">Commitments require a Build Signal.</strong>
@@ -928,7 +928,7 @@ export default function RocksPage() {
                               variant="outline"
                               size="sm"
                               className="mt-3 gap-1 text-amber-700 border-amber-300 hover:bg-amber-100"
-                              onClick={() => openBuildSignalDialog(rock.id, rock.title)}
+                              onClick={() => openKeyResultDialog(rock.id, rock.title)}
                             >
                               <Plus className="h-4 w-4" />
                               Add First Signal
@@ -1059,16 +1059,16 @@ export default function RocksPage() {
       )}
 
       {/* Create Build Signal Dialog */}
-      {buildSignalRock && (
-        <CreateBuildSignalDialog
-          open={isBuildSignalDialogOpen}
+      {keyResultRock && (
+        <CreateKeyResultDialog
+          open={isKeyResultDialogOpen}
           onOpenChange={(open) => {
-            setIsBuildSignalDialogOpen(open)
-            if (!open) setBuildSignalRock(null)
+            setIsKeyResultDialogOpen(open)
+            if (!open) setKeyResultRock(null)
           }}
-          rockId={buildSignalRock.id}
-          rockTitle={buildSignalRock.title}
-          onCreated={() => refreshBuildSignals(buildSignalRock.id)}
+          rockId={keyResultRock.id}
+          rockTitle={keyResultRock.title}
+          onCreated={() => refreshKeyResults(keyResultRock.id)}
         />
       )}
     </div>

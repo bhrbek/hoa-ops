@@ -10,7 +10,7 @@ export {
   type ProjectStatus,
   type TaskPriority,
   type ActivityType,
-  type BuildSignalStatus,
+  type KeyResultStatus,
   type CommitmentStatus,
   type CustomerStatus,
   type AssetStatus,
@@ -26,7 +26,7 @@ export {
   type OEM,
   type Customer,
   type Rock,
-  type BuildSignal,
+  type KeyResult,
   type Project,
   type Milestone,
   type Task,
@@ -38,7 +38,7 @@ export {
 
   // Extended types
   type RockWithProjects,
-  type RockWithBuildSignals,
+  type RockWithKeyResults,
   type RockWithAll,
   type ProjectWithTasks,
   type ProjectWithMilestones,

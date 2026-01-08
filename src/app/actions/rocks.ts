@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireTeamAccess, requireTeamRole, getActiveTeam } from './auth'
-import type { Rock, RockWithProjects, RockWithBuildSignals, RockWithAll } from '@/types/supabase'
+import type { Rock, RockWithProjects, RockWithKeyResults, RockWithAll } from '@/types/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -98,9 +98,9 @@ export async function getRock(rockId: string): Promise<RockWithProjects | null> 
 }
 
 /**
- * Get a rock with build signals
+ * Get a rock with key results
  */
-export async function getRockWithBuildSignals(rockId: string): Promise<RockWithBuildSignals | null> {
+export async function getRockWithKeyResults(rockId: string): Promise<RockWithKeyResults | null> {
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
@@ -108,7 +108,7 @@ export async function getRockWithBuildSignals(rockId: string): Promise<RockWithB
     .select(`
       *,
       owner:profiles!rocks_owner_id_fkey(*),
-      build_signals(*)
+      key_results(*)
     `)
     .eq('id', rockId)
     .is('deleted_at', null)
@@ -126,11 +126,11 @@ export async function getRockWithBuildSignals(rockId: string): Promise<RockWithB
     return null
   }
 
-  return data as RockWithBuildSignals
+  return data as RockWithKeyResults
 }
 
 /**
- * Get a rock with all relations (projects, build signals, evidence)
+ * Get a rock with all relations (projects, key results, evidence)
  */
 export async function getRockWithAll(rockId: string): Promise<RockWithAll | null> {
   const supabase = await createClient()
@@ -141,7 +141,7 @@ export async function getRockWithAll(rockId: string): Promise<RockWithAll | null
       *,
       owner:profiles!rocks_owner_id_fkey(*),
       projects(*),
-      build_signals(*),
+      key_results(*),
       evidence:engagements(*)
     `)
     .eq('id', rockId)

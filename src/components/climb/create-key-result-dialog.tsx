@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { createBuildSignal } from "@/app/actions/build-signals"
+import { createKeyResult } from "@/app/actions/key-results"
 
-interface CreateBuildSignalDialogProps {
+interface CreateKeyResultDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   rockId: string
@@ -25,13 +25,13 @@ interface CreateBuildSignalDialogProps {
   onCreated?: () => void
 }
 
-export function CreateBuildSignalDialog({
+export function CreateKeyResultDialog({
   open,
   onOpenChange,
   rockId,
   rockTitle,
   onCreated,
-}: CreateBuildSignalDialogProps) {
+}: CreateKeyResultDialogProps) {
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [targetValue, setTargetValue] = React.useState("")
@@ -48,7 +48,7 @@ export function CreateBuildSignalDialog({
     setIsSaving(true)
 
     try {
-      await createBuildSignal({
+      await createKeyResult({
         rock_id: rockId,
         title: title.trim(),
         description: description.trim() || undefined,
@@ -57,13 +57,13 @@ export function CreateBuildSignalDialog({
         due_date: dueDate || undefined,
       })
 
-      toast.success("Build signal created successfully")
+      toast.success("Key Result created successfully")
       resetForm()
       onOpenChange(false)
       onCreated?.()
     } catch (error) {
-      console.error("Failed to create build signal:", error)
-      toast.error("Failed to create build signal")
+      console.error("Failed to create key result:", error)
+      toast.error("Failed to create key result")
     } finally {
       setIsSaving(false)
     }
@@ -86,7 +86,7 @@ export function CreateBuildSignalDialog({
               <Target className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle>Add Build Signal</DialogTitle>
+              <DialogTitle>Add Key Result</DialogTitle>
               <DialogDescription>
                 Create a measurable outcome for &quot;{rockTitle}&quot;
               </DialogDescription>
@@ -97,11 +97,11 @@ export function CreateBuildSignalDialog({
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="signal-title">
-              Signal Title <span className="text-red-500">*</span>
+            <Label htmlFor="kr-title">
+              Key Result <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="signal-title"
+              id="kr-title"
               placeholder="e.g., 3 Enterprise POCs Completed"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -114,12 +114,12 @@ export function CreateBuildSignalDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="signal-description">
+            <Label htmlFor="kr-description">
               Description <span className="text-slate-400">(optional)</span>
             </Label>
             <Textarea
-              id="signal-description"
-              placeholder="Additional context about this signal..."
+              id="kr-description"
+              placeholder="Additional context about this key result..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -129,11 +129,11 @@ export function CreateBuildSignalDialog({
           {/* Target Value + Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="signal-target">
+              <Label htmlFor="kr-target">
                 Target Value <span className="text-slate-400">(optional)</span>
               </Label>
               <Input
-                id="signal-target"
+                id="kr-target"
                 type="number"
                 placeholder="e.g., 3"
                 value={targetValue}
@@ -141,11 +141,11 @@ export function CreateBuildSignalDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="signal-unit">
+              <Label htmlFor="kr-unit">
                 Unit <span className="text-slate-400">(optional)</span>
               </Label>
               <Input
-                id="signal-unit"
+                id="kr-unit"
                 placeholder="e.g., POCs, contracts, demos"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
@@ -155,11 +155,11 @@ export function CreateBuildSignalDialog({
 
           {/* Due Date */}
           <div className="space-y-2">
-            <Label htmlFor="signal-due-date">
+            <Label htmlFor="kr-due-date">
               Due Date <span className="text-slate-400">(optional)</span>
             </Label>
             <Input
-              id="signal-due-date"
+              id="kr-due-date"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
@@ -171,7 +171,7 @@ export function CreateBuildSignalDialog({
               Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={!isValid || isSaving}>
-              {isSaving ? "Creating..." : "Create Signal"}
+              {isSaving ? "Creating..." : "Create Key Result"}
             </Button>
           </DialogFooter>
         </form>

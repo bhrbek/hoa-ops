@@ -59,7 +59,7 @@ interface UICommitment {
   title: string
   definitionOfDone: string
   project: string
-  buildSignal: string
+  keyResult: string
   status: CommitmentStatus
   ownerId: string
 }
@@ -78,7 +78,7 @@ function transformCommitment(commitment: CommitmentWithRelations): UICommitment 
     title: commitment.definition_of_done.slice(0, 50) + (commitment.definition_of_done.length > 50 ? '...' : ''),
     definitionOfDone: commitment.definition_of_done,
     project: commitment.project?.title || 'Unknown Project',
-    buildSignal: commitment.build_signal?.title || 'Unknown Signal',
+    keyResult: commitment.key_result?.title || 'Unknown Key Result',
     status: commitment.status,
     ownerId: commitment.owner_id,
   }
@@ -193,7 +193,7 @@ export default function CommitmentBoardPage() {
 
   const handleCreateCommitment = async (data: {
     project_id: string
-    build_signal_id: string
+    key_result_id: string
     definition_of_done: string
     week_of?: string
     notes?: string
@@ -422,7 +422,7 @@ export default function CommitmentBoardPage() {
                                 {commitment.project}
                               </p>
                               <p className="text-slate-400 mt-0.5 truncate text-[10px]">
-                                → {commitment.buildSignal}
+                                → {commitment.keyResult}
                               </p>
                             </div>
                           ))}

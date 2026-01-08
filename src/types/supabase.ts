@@ -15,7 +15,7 @@ export type RockStatus = 'On Track' | 'At Risk' | 'Off Track' | 'Done'
 export type ProjectStatus = 'Active' | 'Done' | 'Blocked'
 export type TaskPriority = 'low' | 'medium' | 'high'
 export type ActivityTypeName = string // Dynamic from activity_types table
-export type BuildSignalStatus = 'not_started' | 'in_progress' | 'achieved' | 'missed'
+export type KeyResultStatus = 'not_started' | 'in_progress' | 'achieved' | 'missed'
 export type CommitmentStatus = 'planned' | 'done' | 'blocked' | 'slipped'
 export type CustomerStatus = 'active' | 'churned' | 'prospect'
 export type AssetStatus = 'active' | 'archived'
@@ -299,8 +299,8 @@ export type Database = {
           deleted_by?: string | null
         }
       }
-      // Build Signals
-      build_signals: {
+      // Key Results (measurable outcomes for Rocks)
+      key_results: {
         Row: {
           id: string
           team_id: string
@@ -310,7 +310,7 @@ export type Database = {
           target_value: number | null
           current_value: number
           unit: string | null
-          status: BuildSignalStatus
+          status: KeyResultStatus
           due_date: string | null
           created_at: string
           updated_at: string
@@ -326,7 +326,7 @@ export type Database = {
           target_value?: number | null
           current_value?: number
           unit?: string | null
-          status?: BuildSignalStatus
+          status?: KeyResultStatus
           due_date?: string | null
           created_at?: string
           updated_at?: string
@@ -342,7 +342,7 @@ export type Database = {
           target_value?: number | null
           current_value?: number
           unit?: string | null
-          status?: BuildSignalStatus
+          status?: KeyResultStatus
           due_date?: string | null
           created_at?: string
           updated_at?: string
@@ -484,7 +484,7 @@ export type Database = {
           owner_id: string
           week_of: string
           project_id: string
-          build_signal_id: string
+          key_result_id: string
           rock_id: string | null
           definition_of_done: string
           status: CommitmentStatus
@@ -501,7 +501,7 @@ export type Database = {
           owner_id: string
           week_of: string
           project_id: string
-          build_signal_id: string
+          key_result_id: string
           rock_id?: string | null
           definition_of_done: string
           status?: CommitmentStatus
@@ -518,7 +518,7 @@ export type Database = {
           owner_id?: string
           week_of?: string
           project_id?: string
-          build_signal_id?: string
+          key_result_id?: string
           rock_id?: string | null
           definition_of_done?: string
           status?: CommitmentStatus
@@ -822,7 +822,7 @@ export type ActivityType = Database['public']['Tables']['activity_types']['Row']
 export type OEM = Database['public']['Tables']['oems']['Row']
 export type Customer = Database['public']['Tables']['customers']['Row']
 export type Rock = Database['public']['Tables']['rocks']['Row']
-export type BuildSignal = Database['public']['Tables']['build_signals']['Row']
+export type KeyResult = Database['public']['Tables']['key_results']['Row']
 export type Project = Database['public']['Tables']['projects']['Row']
 export type Milestone = Database['public']['Tables']['milestones']['Row']
 export type Task = Database['public']['Tables']['tasks']['Row']
@@ -853,14 +853,14 @@ export type RockWithProjects = Rock & {
   owner: Profile | null
 }
 
-export type RockWithBuildSignals = Rock & {
-  build_signals: BuildSignal[]
+export type RockWithKeyResults = Rock & {
+  key_results: KeyResult[]
   owner: Profile | null
 }
 
 export type RockWithAll = Rock & {
   projects: Project[]
-  build_signals: BuildSignal[]
+  key_results: KeyResult[]
   owner: Profile | null
 }
 
@@ -883,7 +883,7 @@ export type ProjectWithAll = Project & {
 
 export type CommitmentWithRelations = Commitment & {
   project: Project
-  build_signal: BuildSignal
+  key_result: KeyResult
   rock: Rock | null
   owner: Profile
 }

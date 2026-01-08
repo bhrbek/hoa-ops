@@ -3,14 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireTeamAccess, getActiveTeam } from './auth'
-import type { BuildSignal, BuildSignalStatus } from '@/types/supabase'
+import type { KeyResult, KeyResultStatus } from '@/types/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Get all build signals for a rock
+ * Get all key results for a rock
  */
-export async function getBuildSignals(rockId: string): Promise<BuildSignal[]> {
+export async function getKeyResults(rockId: string): Promise<KeyResult[]> {
   const supabase = await createClient()
 
   // Get rock's team to check access - use maybeSingle()
@@ -25,68 +25,68 @@ export async function getBuildSignals(rockId: string): Promise<BuildSignal[]> {
   await requireTeamAccess(rock.team_id)
 
   const { data, error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .select('*')
     .eq('rock_id', rockId)
     .is('deleted_at', null)
     .order('created_at')
 
   if (error) {
-    console.error('Error fetching build signals:', error)
-    throw new Error('Failed to fetch build signals')
+    console.error('Error fetching key results:', error)
+    throw new Error('Failed to fetch key results')
   }
 
-  return data as BuildSignal[]
+  return data as KeyResult[]
 }
 
 /**
- * Get all build signals for a team
+ * Get all key results for a team
  */
-export async function getTeamBuildSignals(teamId: string): Promise<BuildSignal[]> {
+export async function getTeamKeyResults(teamId: string): Promise<KeyResult[]> {
   await requireTeamAccess(teamId)
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .select('*')
     .eq('team_id', teamId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching team build signals:', error)
-    throw new Error('Failed to fetch build signals')
+    console.error('Error fetching team key results:', error)
+    throw new Error('Failed to fetch key results')
   }
 
-  return data as BuildSignal[]
+  return data as KeyResult[]
 }
 
 /**
- * Get build signals for active team
+ * Get key results for active team
  */
-export async function getActiveBuildSignals(): Promise<BuildSignal[]> {
+export async function getActiveKeyResults(): Promise<KeyResult[]> {
   const activeTeam = await getActiveTeam()
   if (!activeTeam) throw new Error('No active team')
 
-  return getTeamBuildSignals(activeTeam.team.id)
+  return getTeamKeyResults(activeTeam.team.id)
 }
 
 /**
- * Get a single build signal
+ * Get a single key result
  */
-export async function getBuildSignal(signalId: string): Promise<BuildSignal | null> {
+export async function getKeyResult(keyResultId: string): Promise<KeyResult | null> {
   const supabase = await createClient()
 
-  // Use maybeSingle() as signal might not exist
+  // Use maybeSingle() as key result might not exist
   const { data, error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .select('*')
-    .eq('id', signalId)
+    .eq('id', keyResultId)
     .is('deleted_at', null)
     .maybeSingle()
 
   if (error || !data) {
-    if (error) console.error('Error fetching build signal:', error)
+    if (error) console.error('Error fetching key result:', error)
     return null
   }
 
@@ -97,20 +97,20 @@ export async function getBuildSignal(signalId: string): Promise<BuildSignal | nu
     return null
   }
 
-  return data as BuildSignal
+  return data as KeyResult
 }
 
 /**
- * Create a new build signal
+ * Create a new key result
  */
-export async function createBuildSignal(data: {
+export async function createKeyResult(data: {
   rock_id: string
   title: string
   description?: string
   target_value?: number
   unit?: string
   due_date?: string
-}): Promise<BuildSignal> {
+}): Promise<KeyResult> {
   const supabase = await createClient()
 
   // Get rock's team to check access and get team_id - use maybeSingle()
@@ -124,8 +124,8 @@ export async function createBuildSignal(data: {
 
   await requireTeamAccess(rock.team_id)
 
-  const { data: signal, error } = await (supabase as any)
-    .from('build_signals')
+  const { data: keyResult, error } = await (supabase as any)
+    .from('key_results')
     .insert({
       team_id: rock.team_id,
       rock_id: data.rock_id,
@@ -141,45 +141,45 @@ export async function createBuildSignal(data: {
     .single()
 
   if (error) {
-    console.error('Error creating build signal:', error)
-    throw new Error('Failed to create build signal')
+    console.error('Error creating key result:', error)
+    throw new Error('Failed to create key result')
   }
 
   revalidatePath('/rocks')
   revalidatePath('/')
-  return signal
+  return keyResult
 }
 
 /**
- * Update a build signal
+ * Update a key result
  */
-export async function updateBuildSignal(
-  signalId: string,
-  data: Partial<Pick<BuildSignal, 'title' | 'description' | 'target_value' | 'current_value' | 'unit' | 'status' | 'due_date'>>
-): Promise<BuildSignal> {
+export async function updateKeyResult(
+  keyResultId: string,
+  data: Partial<Pick<KeyResult, 'title' | 'description' | 'target_value' | 'current_value' | 'unit' | 'status' | 'due_date'>>
+): Promise<KeyResult> {
   const supabase = await createClient()
 
-  // Get signal's team to check access - use maybeSingle()
-  const { data: signal } = await (supabase as any)
-    .from('build_signals')
+  // Get key result's team to check access - use maybeSingle()
+  const { data: keyResult } = await (supabase as any)
+    .from('key_results')
     .select('team_id')
-    .eq('id', signalId)
+    .eq('id', keyResultId)
     .maybeSingle()
 
-  if (!signal) throw new Error('Build signal not found')
+  if (!keyResult) throw new Error('Key result not found')
 
-  await requireTeamAccess(signal.team_id)
+  await requireTeamAccess(keyResult.team_id)
 
   const { data: updated, error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .update(data)
-    .eq('id', signalId)
+    .eq('id', keyResultId)
     .select()
     .single()
 
   if (error) {
-    console.error('Error updating build signal:', error)
-    throw new Error('Failed to update build signal')
+    console.error('Error updating key result:', error)
+    throw new Error('Failed to update key result')
   }
 
   revalidatePath('/rocks')
@@ -188,21 +188,21 @@ export async function updateBuildSignal(
 }
 
 /**
- * Update build signal progress (convenience method)
+ * Update key result progress (convenience method)
  */
-export async function updateBuildSignalProgress(
-  signalId: string,
+export async function updateKeyResultProgress(
+  keyResultId: string,
   currentValue: number
-): Promise<BuildSignal> {
+): Promise<KeyResult> {
   const supabase = await createClient()
 
-  // Get signal to check target and auto-update status
-  const existing = await getBuildSignal(signalId)
-  if (!existing) throw new Error('Build signal not found')
+  // Get key result to check target and auto-update status
+  const existing = await getKeyResult(keyResultId)
+  if (!existing) throw new Error('Key result not found')
 
   await requireTeamAccess(existing.team_id)
 
-  let newStatus: BuildSignalStatus = existing.status
+  let newStatus: KeyResultStatus = existing.status
 
   // Auto-update status based on progress
   if (currentValue > 0 && newStatus === 'not_started') {
@@ -215,18 +215,18 @@ export async function updateBuildSignalProgress(
   }
 
   const { data: updated, error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .update({
       current_value: currentValue,
       status: newStatus
     })
-    .eq('id', signalId)
+    .eq('id', keyResultId)
     .select()
     .single()
 
   if (error) {
-    console.error('Error updating build signal progress:', error)
-    throw new Error('Failed to update build signal progress')
+    console.error('Error updating key result progress:', error)
+    throw new Error('Failed to update key result progress')
   }
 
   revalidatePath('/rocks')
@@ -235,47 +235,47 @@ export async function updateBuildSignalProgress(
 }
 
 /**
- * Mark a build signal as achieved
+ * Mark a key result as achieved
  */
-export async function markBuildSignalAchieved(signalId: string): Promise<BuildSignal> {
-  return updateBuildSignal(signalId, { status: 'achieved' })
+export async function markKeyResultAchieved(keyResultId: string): Promise<KeyResult> {
+  return updateKeyResult(keyResultId, { status: 'achieved' })
 }
 
 /**
- * Mark a build signal as missed
+ * Mark a key result as missed
  */
-export async function markBuildSignalMissed(signalId: string): Promise<BuildSignal> {
-  return updateBuildSignal(signalId, { status: 'missed' })
+export async function markKeyResultMissed(keyResultId: string): Promise<KeyResult> {
+  return updateKeyResult(keyResultId, { status: 'missed' })
 }
 
 /**
- * Soft delete a build signal
+ * Soft delete a key result
  */
-export async function deleteBuildSignal(signalId: string): Promise<void> {
+export async function deleteKeyResult(keyResultId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get signal's team to check access - use maybeSingle()
-  const { data: signal } = await (supabase as any)
-    .from('build_signals')
+  // Get key result's team to check access - use maybeSingle()
+  const { data: keyResult } = await (supabase as any)
+    .from('key_results')
     .select('team_id')
-    .eq('id', signalId)
+    .eq('id', keyResultId)
     .maybeSingle()
 
-  if (!signal) throw new Error('Build signal not found')
+  if (!keyResult) throw new Error('Key result not found')
 
-  const { userId } = await requireTeamAccess(signal.team_id)
+  const { userId } = await requireTeamAccess(keyResult.team_id)
 
   const { error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .update({
       deleted_at: new Date().toISOString(),
       deleted_by: userId
     })
-    .eq('id', signalId)
+    .eq('id', keyResultId)
 
   if (error) {
-    console.error('Error deleting build signal:', error)
-    throw new Error('Failed to delete build signal')
+    console.error('Error deleting key result:', error)
+    throw new Error('Failed to delete key result')
   }
 
   revalidatePath('/rocks')
@@ -283,17 +283,17 @@ export async function deleteBuildSignal(signalId: string): Promise<void> {
 }
 
 /**
- * Get build signals by status for a team
+ * Get key results by status for a team
  */
-export async function getBuildSignalsByStatus(
+export async function getKeyResultsByStatus(
   teamId: string,
-  status: BuildSignalStatus
-): Promise<BuildSignal[]> {
+  status: KeyResultStatus
+): Promise<KeyResult[]> {
   await requireTeamAccess(teamId)
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
-    .from('build_signals')
+    .from('key_results')
     .select('*')
     .eq('team_id', teamId)
     .eq('status', status)
@@ -301,9 +301,9 @@ export async function getBuildSignalsByStatus(
     .order('due_date')
 
   if (error) {
-    console.error('Error fetching build signals by status:', error)
+    console.error('Error fetching key results by status:', error)
     return []
   }
 
-  return data as BuildSignal[]
+  return data as KeyResult[]
 }
