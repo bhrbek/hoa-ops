@@ -20,6 +20,7 @@ import {
   Pencil,
   Archive,
   XCircle,
+  Target,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -38,13 +39,15 @@ import { RichTextDisplay } from "@/components/ui/rich-text-editor"
 import { useTeam } from "@/contexts/team-context"
 import { getActiveRocks, createRock, updateRock, deleteRock } from "@/app/actions/rocks"
 import { createProject, updateProject } from "@/app/actions/projects"
+import { getBuildSignals } from "@/app/actions/build-signals"
 import { getActiveEngagements } from "@/app/actions/engagements"
 import { CreateRockDialog } from "@/components/climb/create-rock-dialog"
 import { CreateProjectDialog } from "@/components/climb/create-project-dialog"
+import { CreateBuildSignalDialog } from "@/components/climb/create-build-signal-dialog"
 import { EditRockDialog } from "@/components/climb/edit-rock-dialog"
 import { EditProjectDialog } from "@/components/climb/edit-project-dialog"
 import { toast } from "sonner"
-import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus, Project, ProjectStatus } from "@/types/supabase"
+import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus, Project, ProjectStatus, BuildSignal } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -220,6 +223,9 @@ export default function RocksPage() {
   const [selectedRockId, setSelectedRockId] = React.useState<string | undefined>()
   const [editingRock, setEditingRock] = React.useState<Rock | null>(null)
   const [editingProject, setEditingProject] = React.useState<{ project: Project; rockTitle: string } | null>(null)
+  const [isBuildSignalDialogOpen, setIsBuildSignalDialogOpen] = React.useState(false)
+  const [buildSignalRock, setBuildSignalRock] = React.useState<{ id: string; title: string } | null>(null)
+  const [buildSignalsMap, setBuildSignalsMap] = React.useState<Map<string, BuildSignal[]>>(new Map())
   const { activeTeam, isLoading } = useTeam()
 
   // Function to fetch/refresh data
@@ -382,6 +388,41 @@ export default function RocksPage() {
   const openEditProjectDialog = (project: Project, rockTitle: string) => {
     setEditingProject({ project, rockTitle })
     setIsEditProjectDialogOpen(true)
+  }
+
+  // Open build signal dialog for a specific rock
+  const openBuildSignalDialog = (rockId: string, rockTitle: string) => {
+    setBuildSignalRock({ id: rockId, title: rockTitle })
+    setIsBuildSignalDialogOpen(true)
+  }
+
+  // Fetch build signals when a rock is expanded
+  React.useEffect(() => {
+    async function fetchBuildSignals() {
+      for (const rockId of expandedRocks) {
+        if (!buildSignalsMap.has(rockId)) {
+          try {
+            const signals = await getBuildSignals(rockId)
+            setBuildSignalsMap(prev => new Map(prev).set(rockId, signals))
+          } catch (err) {
+            console.error(`Failed to fetch build signals for rock ${rockId}:`, err)
+          }
+        }
+      }
+    }
+    if (expandedRocks.length > 0) {
+      fetchBuildSignals()
+    }
+  }, [expandedRocks])
+
+  // Refresh build signals for a rock after creating a new one
+  const refreshBuildSignals = async (rockId: string) => {
+    try {
+      const signals = await getBuildSignals(rockId)
+      setBuildSignalsMap(prev => new Map(prev).set(rockId, signals))
+    } catch (err) {
+      console.error(`Failed to refresh build signals for rock ${rockId}:`, err)
+    }
   }
 
   // Handle saving project edits
@@ -805,6 +846,98 @@ export default function RocksPage() {
                       </div>
                     </div>
 
+                    {/* Build Signals Section */}
+                    <div className="px-5 pb-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <Target className="h-4 w-4" />
+                            Build Signals
+                          </h4>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Measurable outcomes that define success. Commitments link to these.
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-amber-600 gap-1"
+                          onClick={() => openBuildSignalDialog(rock.id, rock.title)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Signal
+                        </Button>
+                      </div>
+
+                      {(() => {
+                        const signals = buildSignalsMap.get(rock.id) || []
+                        return signals.length > 0 ? (
+                          <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
+                            {signals.map((signal) => (
+                              <div
+                                key={signal.id}
+                                className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "p-2 rounded-lg",
+                                    signal.status === 'achieved' ? "bg-emerald-100" :
+                                    signal.status === 'in_progress' ? "bg-blue-100" :
+                                    signal.status === 'missed' ? "bg-red-100" : "bg-slate-100"
+                                  )}>
+                                    <Target className={cn(
+                                      "h-4 w-4",
+                                      signal.status === 'achieved' ? "text-emerald-600" :
+                                      signal.status === 'in_progress' ? "text-blue-600" :
+                                      signal.status === 'missed' ? "text-red-600" : "text-slate-500"
+                                    )} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-900">{signal.title}</p>
+                                    <p className="text-xs text-slate-500">
+                                      {signal.target_value ? `Target: ${signal.target_value} ${signal.unit || ''}` : 'No target set'}
+                                      {signal.due_date && ` • Due ${formatShortDate(signal.due_date)}`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant={
+                                    signal.status === 'achieved' ? 'success' :
+                                    signal.status === 'in_progress' ? 'default' :
+                                    signal.status === 'missed' ? 'destructive' : 'outline'
+                                  }
+                                >
+                                  {signal.status === 'not_started' ? 'Not Started' :
+                                   signal.status === 'in_progress' ? 'In Progress' :
+                                   signal.status === 'achieved' ? 'Achieved' : 'Missed'}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="bg-white rounded-lg border border-dashed border-amber-300 bg-amber-50/30 p-6 text-center">
+                            <Target className="h-8 w-8 text-amber-400 mx-auto mb-2" />
+                            <p className="text-sm font-medium text-amber-900">No Build Signals Yet</p>
+                            <p className="text-xs text-amber-700 mt-1 max-w-sm mx-auto">
+                              Build Signals are the measurable outcomes that prove this Rock is on track.
+                              Add signals like &quot;3 POCs completed&quot; or &quot;API docs published&quot;.
+                              <br />
+                              <strong className="mt-2 block">Commitments require a Build Signal.</strong>
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-3 gap-1 text-amber-700 border-amber-300 hover:bg-amber-100"
+                              onClick={() => openBuildSignalDialog(rock.id, rock.title)}
+                            >
+                              <Plus className="h-4 w-4" />
+                              Add First Signal
+                            </Button>
+                          </div>
+                        )
+                      })()}
+                    </div>
+
                     {/* Evidence Locker */}
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between mb-3">
@@ -922,6 +1055,20 @@ export default function RocksPage() {
           project={editingProject.project}
           rockTitle={editingProject.rockTitle}
           onSave={handleEditProject}
+        />
+      )}
+
+      {/* Create Build Signal Dialog */}
+      {buildSignalRock && (
+        <CreateBuildSignalDialog
+          open={isBuildSignalDialogOpen}
+          onOpenChange={(open) => {
+            setIsBuildSignalDialogOpen(open)
+            if (!open) setBuildSignalRock(null)
+          }}
+          rockId={buildSignalRock.id}
+          rockTitle={buildSignalRock.title}
+          onCreated={() => refreshBuildSignals(buildSignalRock.id)}
         />
       )}
     </div>
