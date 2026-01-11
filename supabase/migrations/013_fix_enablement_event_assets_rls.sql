@@ -1,35 +1,6 @@
--- Add RLS policies for enablement_event_assets junction table
--- This table links enablement events to assets
+-- Migration: 013_fix_enablement_event_assets_rls (LEGACY)
+-- NOTE: This migration is a no-op. RLS policies for enablement_event_assets
+-- are now created in migration 010_enable_rls_junction_tables.sql
 
-DROP POLICY IF EXISTS "enablement_event_assets_select" ON public.enablement_event_assets;
-DROP POLICY IF EXISTS "enablement_event_assets_insert" ON public.enablement_event_assets;
-DROP POLICY IF EXISTS "enablement_event_assets_delete" ON public.enablement_event_assets;
-
--- Team members can read enablement event assets for their team
-CREATE POLICY "enablement_event_assets_select" ON public.enablement_event_assets
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.enablement_events ee
-      WHERE ee.id = enablement_event_assets.event_id
-      AND public.is_team_member(ee.team_id)
-    )
-  );
-
--- Team members can manage enablement event assets
-CREATE POLICY "enablement_event_assets_insert" ON public.enablement_event_assets
-  FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.enablement_events ee
-      WHERE ee.id = enablement_event_assets.event_id
-      AND public.is_team_member(ee.team_id)
-    )
-  );
-
-CREATE POLICY "enablement_event_assets_delete" ON public.enablement_event_assets
-  FOR DELETE USING (
-    EXISTS (
-      SELECT 1 FROM public.enablement_events ee
-      WHERE ee.id = enablement_event_assets.event_id
-      AND public.is_team_member(ee.team_id)
-    )
-  );
+-- No-op: policies already created in migration 010
+SELECT 1;

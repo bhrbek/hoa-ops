@@ -36,20 +36,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn, formatCompactCurrency, formatShortDate } from "@/lib/utils"
+import { cn, formatShortDate } from "@/lib/utils"
 import { RichTextDisplay } from "@/components/ui/rich-text-editor"
 import { useTeam } from "@/contexts/team-context"
 import { getActiveRocks, createRock, updateRock, deleteRock } from "@/app/actions/rocks"
 import { createProject, updateProject } from "@/app/actions/projects"
 import { getKeyResults } from "@/app/actions/key-results"
-import { getActiveEngagements } from "@/app/actions/engagements"
+import { getActiveIssues } from "@/app/actions/issues"
 import { CreateRockDialog } from "@/components/climb/create-rock-dialog"
 import { CreateProjectDialog } from "@/components/climb/create-project-dialog"
 import { CreateKeyResultDialog } from "@/components/climb/create-key-result-dialog"
 import { EditRockDialog } from "@/components/climb/edit-rock-dialog"
 import { EditProjectDialog } from "@/components/climb/edit-project-dialog"
 import { toast } from "sonner"
-import type { RockWithProjects, EngagementWithRelations, Rock, RockStatus, Project, ProjectStatus, KeyResult } from "@/types/supabase"
+import type { RockWithProjects, IssueWithRelations, Rock, RockStatus, Project, ProjectStatus, KeyResult } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -101,21 +101,22 @@ type UIRock = {
     status: string
     estimatedHours: number
   }[]
-  evidence: {
+  linkedIssues: {
     id: string
-    customer: string
-    type: string
+    title: string
+    issueType: string
     date: string
-    revenue: number
+    priority: string
+    status: string
   }[]
 }
 
-function transformRock(rock: RockWithProjects, engagements: EngagementWithRelations[]): UIRock {
+function transformRock(rock: RockWithProjects, issues: IssueWithRelations[]): UIRock {
   const ownerName = rock.owner?.full_name || 'Unknown'
   const ownerId = rock.owner?.id || rock.owner_id || rock.id
 
-  // Filter engagements linked to this rock
-  const linkedEngagements = engagements.filter(e => e.rock_id === rock.id)
+  // Filter issues linked to this rock (priority)
+  const linkedIssues = issues.filter(i => i.rock_id === rock.id)
 
   return {
     id: rock.id,
@@ -149,12 +150,13 @@ function transformRock(rock: RockWithProjects, engagements: EngagementWithRelati
           estimatedHours: p.estimated_hours,
         }
       }),
-    evidence: linkedEngagements.map(e => ({
-      id: e.id,
-      customer: e.customer?.name || e.customer_name,
-      type: e.activity_type,
-      date: e.date,
-      revenue: e.revenue_impact,
+    linkedIssues: linkedIssues.map(i => ({
+      id: i.id,
+      title: i.title || i.customer_name || 'Untitled Issue',
+      issueType: i.issue_type || 'issue',
+      date: i.date,
+      priority: i.priority || 'medium',
+      status: i.status || 'open',
     })),
   }
 }
@@ -250,14 +252,14 @@ function RocksPageContent() {
     }
     setError(null)
     try {
-      // Fetch rocks and engagements in parallel
-      const [rocksData, engagementsData] = await Promise.all([
+      // Fetch rocks and issues in parallel
+      const [rocksData, issuesData] = await Promise.all([
         getActiveRocks(),
-        getActiveEngagements({ limit: 500 })
+        getActiveIssues({ limit: 500 })
       ])
 
       setRawRocks(rocksData)
-      const transformedRocks = rocksData.map(rock => transformRock(rock, engagementsData))
+      const transformedRocks = rocksData.map(rock => transformRock(rock, issuesData))
       setRocks(transformedRocks)
 
       // Auto-expand logic on initial load
@@ -388,6 +390,8 @@ function RocksPageContent() {
       perfect_outcome: rock.perfect_outcome,
       worst_outcome: rock.worst_outcome,
       progress_override: rock.progress_override,
+      fiscal_year: rock.fiscal_year || null,
+      priority_type: rock.priority_type || null,
       created_at: rock.created_at,
       updated_at: rock.updated_at,
       deleted_at: rock.deleted_at,
@@ -571,9 +575,9 @@ function RocksPageContent() {
             const statusConfig = getStatusConfig(rock.status)
             const StatusIcon = statusConfig.icon
 
-            // Warning: High activity, low build
-            const highActivityLowBuild =
-              rock.evidence.length > 5 && rock.progress < 10
+            // Warning: High issue count, low progress
+            const highIssueLowProgress =
+              rock.linkedIssues.length > 5 && rock.progress < 10
 
             return (
               <Card
@@ -965,29 +969,29 @@ function RocksPageContent() {
                       })()}
                     </div>
 
-                    {/* Evidence Locker */}
+                    {/* Linked Issues */}
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                           <Link2 className="h-4 w-4" />
-                          Evidence Locker
-                          {highActivityLowBuild && (
+                          Linked Issues
+                          {highIssueLowProgress && (
                             <Badge variant="warning" className="ml-2 gap-1">
                               <AlertTriangle className="h-3 w-3" />
-                              High Activity / Low Build
+                              High Issues / Low Progress
                             </Badge>
                           )}
                         </h4>
                         <span className="text-xs text-slate-400">
-                          {rock.evidence.length} linked engagements
+                          {rock.linkedIssues.length} linked issues
                         </span>
                       </div>
 
-                      {rock.evidence.length > 0 ? (
+                      {rock.linkedIssues.length > 0 ? (
                         <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100">
-                          {rock.evidence.map((ev) => (
+                          {rock.linkedIssues.map((issue) => (
                             <div
-                              key={ev.id}
+                              key={issue.id}
                               className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
                             >
                               <div className="flex items-center gap-3">
@@ -995,26 +999,29 @@ function RocksPageContent() {
                                   <Users className="h-4 w-4 text-slate-500" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-slate-900">{ev.customer}</p>
+                                  <p className="text-sm font-medium text-slate-900">{issue.title}</p>
                                   <p className="text-xs text-slate-500">
-                                    {ev.type} • {formatShortDate(ev.date)}
+                                    {issue.issueType} • {formatShortDate(issue.date)}
                                   </p>
                                 </div>
                               </div>
-                              {ev.revenue > 0 && (
-                                <span className="text-sm font-semibold text-emerald-600">
-                                  {formatCompactCurrency(ev.revenue)}
-                                </span>
-                              )}
+                              <Badge
+                                variant={
+                                  issue.priority === 'urgent' ? 'destructive' :
+                                  issue.priority === 'high' ? 'warning' : 'default'
+                                }
+                              >
+                                {issue.priority}
+                              </Badge>
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div className="bg-white rounded-lg border border-dashed border-slate-300 p-6 text-center">
                           <Link2 className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500">No engagements linked yet</p>
+                          <p className="text-sm text-slate-500">No issues linked yet</p>
                           <p className="text-xs text-slate-400 mt-1">
-                            Link engagements from The Stream to build evidence
+                            Link issues from the Issue Tracker to this priority
                           </p>
                         </div>
                       )}

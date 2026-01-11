@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from './auth'
 import { getTeamMembers } from './teams'
-import type { Domain, OEM, Profile, Customer, ActivityType } from '@/types/supabase'
+import type { Domain, Vendor, OEM, Profile, Customer, ActivityType } from '@/types/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -27,22 +27,29 @@ export async function getDomains(): Promise<Domain[]> {
 }
 
 /**
- * Get all OEMs (reference data, not team-scoped)
+ * Get all vendors (reference data, not team-scoped)
+ * Vendors are service providers: landscapers, plumbers, attorneys, etc.
  */
-export async function getOEMs(): Promise<OEM[]> {
+export async function getVendors(): Promise<Vendor[]> {
   const supabase = await createClient()
 
   const { data, error } = await (supabase as any)
-    .from('oems')
+    .from('vendors')
     .select('*')
+    .is('deleted_at', null)
     .order('name')
 
   if (error) {
-    console.error('Error fetching OEMs:', error)
-    throw new Error('Failed to fetch OEMs')
+    console.error('Error fetching vendors:', error)
+    throw new Error('Failed to fetch vendors')
   }
 
   return data
+}
+
+/** @deprecated Use getVendors instead */
+export async function getOEMs(): Promise<OEM[]> {
+  return getVendors()
 }
 
 /**
@@ -347,16 +354,21 @@ export async function deleteDomain(domainId: string): Promise<void> {
 }
 
 // ============================================
-// ADMIN: OEM Management
+// ADMIN: Vendor Management
 // ============================================
 
 /**
- * Create a new OEM (org admin only)
+ * Create a new vendor (org admin only)
+ * Vendors are service providers: landscapers, plumbers, attorneys, etc.
  */
-export async function createOEM(data: {
+export async function createVendor(data: {
   name: string
+  specialty?: string  // "Landscaping", "Plumbing", "Legal", etc.
+  contact_name?: string
+  contact_phone?: string
+  contact_email?: string
   logo_url?: string
-}): Promise<OEM> {
+}): Promise<Vendor> {
   const activeTeam = await getActiveTeam()
   if (!activeTeam?.isOrgAdmin) {
     throw new Error('Access denied: org admin required')
@@ -364,30 +376,41 @@ export async function createOEM(data: {
 
   const supabase = await createClient()
 
-  const { data: oem, error } = await (supabase as any)
-    .from('oems')
+  const { data: vendor, error } = await (supabase as any)
+    .from('vendors')
     .insert({
       name: data.name,
+      specialty: data.specialty || null,
+      contact_name: data.contact_name || null,
+      contact_phone: data.contact_phone || null,
+      contact_email: data.contact_email || null,
       logo_url: data.logo_url || null,
     })
     .select()
     .single()
 
   if (error) {
-    console.error('Error creating OEM:', error)
-    throw new Error('Failed to create OEM')
+    console.error('Error creating vendor:', error)
+    throw new Error('Failed to create vendor')
   }
 
-  return oem
+  return vendor
 }
 
 /**
- * Update an OEM (org admin only)
+ * Update a vendor (org admin only)
  */
-export async function updateOEM(
-  oemId: string,
-  data: { name?: string; logo_url?: string }
-): Promise<OEM> {
+export async function updateVendor(
+  vendorId: string,
+  data: {
+    name?: string
+    specialty?: string
+    contact_name?: string
+    contact_phone?: string
+    contact_email?: string
+    logo_url?: string
+  }
+): Promise<Vendor> {
   const activeTeam = await getActiveTeam()
   if (!activeTeam?.isOrgAdmin) {
     throw new Error('Access denied: org admin required')
@@ -395,25 +418,25 @@ export async function updateOEM(
 
   const supabase = await createClient()
 
-  const { data: oem, error } = await (supabase as any)
-    .from('oems')
+  const { data: vendor, error } = await (supabase as any)
+    .from('vendors')
     .update(data)
-    .eq('id', oemId)
+    .eq('id', vendorId)
     .select()
     .single()
 
   if (error) {
-    console.error('Error updating OEM:', error)
-    throw new Error('Failed to update OEM')
+    console.error('Error updating vendor:', error)
+    throw new Error('Failed to update vendor')
   }
 
-  return oem
+  return vendor
 }
 
 /**
- * Delete an OEM (org admin only) - SOFT DELETE
+ * Delete a vendor (org admin only) - SOFT DELETE
  */
-export async function deleteOEM(oemId: string): Promise<void> {
+export async function deleteVendor(vendorId: string): Promise<void> {
   const activeTeam = await getActiveTeam()
   if (!activeTeam?.isOrgAdmin) {
     throw new Error('Access denied: org admin required')
@@ -426,17 +449,42 @@ export async function deleteOEM(oemId: string): Promise<void> {
 
   // Soft delete - maintains audit trail per CLAUDE.md contract
   const { error } = await (supabase as any)
-    .from('oems')
+    .from('vendors')
     .update({
       deleted_at: new Date().toISOString(),
       deleted_by: user.id
     })
-    .eq('id', oemId)
+    .eq('id', vendorId)
 
   if (error) {
-    console.error('Error deleting OEM:', error)
-    throw new Error('Failed to delete OEM')
+    console.error('Error deleting vendor:', error)
+    throw new Error('Failed to delete vendor')
   }
+}
+
+// ============================================
+// Legacy OEM aliases (deprecated)
+// ============================================
+
+/** @deprecated Use createVendor instead */
+export async function createOEM(data: {
+  name: string
+  logo_url?: string
+}): Promise<OEM> {
+  return createVendor(data)
+}
+
+/** @deprecated Use updateVendor instead */
+export async function updateOEM(
+  oemId: string,
+  data: { name?: string; logo_url?: string }
+): Promise<OEM> {
+  return updateVendor(oemId, data)
+}
+
+/** @deprecated Use deleteVendor instead */
+export async function deleteOEM(oemId: string): Promise<void> {
+  return deleteVendor(oemId)
 }
 
 // ============================================

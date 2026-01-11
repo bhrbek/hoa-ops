@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Plus,
   MoreHorizontal,
-  Link2,
   Download,
   Loader2,
   AlertTriangle,
@@ -20,11 +19,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatDate } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
 import { useTeam } from "@/contexts/team-context"
-import { getActiveEngagements, createEngagement } from "@/app/actions/engagements"
-import type { EngagementWithRelations } from "@/types/supabase"
+import { getActiveIssues, createIssue } from "@/app/actions/issues"
+import type { IssueWithRelations } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -57,31 +56,33 @@ function getAvatarColor(userId: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
-type UIEngagement = {
+type UIIssue = {
   id: string
   date: string
-  customer: string
-  domains: string[]
-  oems: string[]
-  revenue: number
-  gp: number
-  linkedRock: string | null
+  title: string
+  issueType: string
+  priority: string
+  status: string
+  dueDate: string | null
+  assignedTo: string | null
+  linkedPriority: string | null
   owner: { name: string; initials: string; color: string }
 }
 
-function transformEngagement(engagement: EngagementWithRelations): UIEngagement {
-  const ownerName = engagement.owner?.full_name || 'Unknown'
-  const ownerId = engagement.owner?.id || engagement.owner_id
+function transformIssue(issue: IssueWithRelations): UIIssue {
+  const ownerName = issue.owner?.full_name || 'Unknown'
+  const ownerId = issue.owner?.id || issue.owner_id
 
   return {
-    id: engagement.id,
-    date: engagement.date,
-    customer: engagement.customer?.name || engagement.customer_name,
-    domains: engagement.domains?.map(d => d.name) || [],
-    oems: engagement.oems?.map(o => o.name) || [],
-    revenue: engagement.revenue_impact,
-    gp: engagement.gp_impact,
-    linkedRock: engagement.rock?.title || null,
+    id: issue.id,
+    date: issue.date,
+    title: issue.title || issue.customer_name || 'Untitled Issue',
+    issueType: issue.issue_type || 'issue',
+    priority: issue.priority || 'medium',
+    status: issue.status || 'open',
+    dueDate: issue.due_date || null,
+    assignedTo: issue.assigned_to || null,
+    linkedPriority: issue.rock?.title || null,
     owner: {
       name: ownerName,
       initials: getInitials(ownerName),
@@ -90,16 +91,46 @@ function transformEngagement(engagement: EngagementWithRelations): UIEngagement 
   }
 }
 
-function getDomainBadgeVariant(domain: string) {
-  switch (domain.toLowerCase()) {
-    case "cloud":
+function getPriorityBadgeVariant(priority: string): "destructive" | "warning" | "default" | "outline" {
+  switch (priority.toLowerCase()) {
+    case "urgent":
+      return "destructive"
+    case "high":
+      return "warning"
+    case "medium":
+      return "default"
+    case "low":
+      return "outline"
+    default:
+      return "default"
+  }
+}
+
+function getStatusBadgeVariant(status: string): "default" | "warning" | "success" | "outline" {
+  switch (status.toLowerCase()) {
+    case "open":
+      return "default"
+    case "in_progress":
+      return "warning"
+    case "resolved":
+      return "success"
+    case "closed":
+      return "outline"
+    default:
+      return "default"
+  }
+}
+
+function getIssueTypeBadgeVariant(issueType: string) {
+  switch (issueType.toLowerCase()) {
+    case "maintenance":
       return "cloud"
-    case "security":
-      return "security"
-    case "infra":
+    case "complaint":
+      return "destructive"
+    case "request":
       return "infra"
-    case "network":
-      return "network"
+    case "violation":
+      return "warning"
     default:
       return "default"
   }
@@ -108,14 +139,14 @@ function getDomainBadgeVariant(domain: string) {
 export default function StreamPage() {
   const [drawerOpen, setDrawerOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [engagements, setEngagements] = React.useState<UIEngagement[]>([])
+  const [issues, setIssues] = React.useState<UIIssue[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const { activeTeam, isLoading } = useTeam()
 
-  const fetchEngagements = React.useCallback(async () => {
+  const fetchIssues = React.useCallback(async () => {
     if (!activeTeam) {
-      setEngagements([])
+      setIssues([])
       setIsLoadingData(false)
       setError(null)
       return
@@ -124,57 +155,60 @@ export default function StreamPage() {
     setIsLoadingData(true)
     setError(null)
     try {
-      const data = await getActiveEngagements({ limit: 100 })
-      setEngagements(data.map(transformEngagement))
+      const data = await getActiveIssues({ limit: 100 })
+      setIssues(data.map(transformIssue))
     } catch (err) {
-      console.error('Failed to fetch engagements:', err)
-      setEngagements([])
-      setError('Failed to load engagements. Please try again.')
+      console.error('Failed to fetch issues:', err)
+      setIssues([])
+      setError('Failed to load issues. Please try again.')
     } finally {
       setIsLoadingData(false)
     }
   }, [activeTeam?.id])
 
-  // Fetch engagements when team changes
+  // Fetch issues when team changes
   React.useEffect(() => {
-    fetchEngagements()
-  }, [fetchEngagements])
+    fetchIssues()
+  }, [fetchIssues])
 
-  const handleCreateEngagement = async (formData: {
-    customer_name: string
+  const handleCreateIssue = async (formData: {
+    title: string
+    description?: string
     date: string
-    activity_type: string
-    revenue_impact: number
-    gp_impact: number
+    issue_type: string
+    priority: string
+    status: string
     notes: string
     rock_id: string | null
-    domain_ids: string[]
-    oem_ids: string[]
-    asset_ids: string[]
+    vendor_ids: string[]
   }) => {
     if (!activeTeam) return
 
-    await createEngagement({
+    // Combine description and notes for the issue description
+    const fullDescription = formData.description
+      ? `${formData.description}\n\nNotes: ${formData.notes}`
+      : formData.notes
+
+    await createIssue({
       team_id: activeTeam.id,
-      customer_name: formData.customer_name,
-      date: formData.date,
-      activity_type: formData.activity_type,
-      revenue_impact: formData.revenue_impact,
-      gp_impact: formData.gp_impact,
-      notes: formData.notes,
-      rock_id: formData.rock_id || undefined,
-      domain_ids: formData.domain_ids,
-      oem_ids: formData.oem_ids,
+      title: formData.title,
+      description: fullDescription || undefined,
+      issue_type: formData.issue_type,
+      priority: formData.priority as 'urgent' | 'high' | 'medium' | 'low',
+      status: formData.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+      priority_id: formData.rock_id || undefined,
+      vendor_ids: formData.vendor_ids,
     })
 
-    await fetchEngagements()
+    await fetchIssues()
   }
 
-  const filteredEngagements = engagements.filter(
-    (e) =>
-      e.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.domains.some((d) => d.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      e.oems.some((o) => o.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredIssues = issues.filter(
+    (issue) =>
+      issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.issueType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.priority.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.status.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const isPageLoading = isLoading || isLoadingData
@@ -185,9 +219,9 @@ export default function StreamPage() {
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-8 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">The Stream</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Issue Tracker</h1>
             <p className="text-sm text-slate-500">
-              Track and manage engagement activities
+              Track and manage HOA issues
               {activeTeam && (
                 <span className="ml-2 text-slate-400">({activeTeam.name})</span>
               )}
@@ -195,7 +229,7 @@ export default function StreamPage() {
           </div>
           <Button variant="primary" className="gap-2" onClick={() => setDrawerOpen(true)}>
             <Plus className="h-4 w-4" />
-            Log Engagement
+            New Issue
           </Button>
         </div>
       </header>
@@ -248,7 +282,7 @@ export default function StreamPage() {
           {isPageLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-              <span className="ml-3 text-slate-500">Loading engagements...</span>
+              <span className="ml-3 text-slate-500">Loading issues...</span>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -257,20 +291,20 @@ export default function StreamPage() {
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">Failed to Load</h3>
               <p className="text-sm text-slate-500 max-w-md mb-4">{error}</p>
-              <Button variant="outline" className="gap-2" onClick={() => fetchEngagements()}>
+              <Button variant="outline" className="gap-2" onClick={() => fetchIssues()}>
                 <RefreshCw className="h-4 w-4" />
                 Try Again
               </Button>
             </div>
-          ) : engagements.length === 0 ? (
+          ) : issues.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="text-slate-400 mb-2">No engagements yet</div>
+              <div className="text-slate-400 mb-2">No issues yet</div>
               <p className="text-sm text-slate-500 max-w-md">
-                Log your first engagement to start tracking customer activities and building your business observability.
+                Create your first issue to start tracking HOA maintenance, complaints, and requests.
               </p>
               <Button variant="primary" className="mt-4 gap-2" onClick={() => setDrawerOpen(true)}>
                 <Plus className="h-4 w-4" />
-                Log Engagement
+                New Issue
               </Button>
             </div>
           ) : (
@@ -280,75 +314,59 @@ export default function StreamPage() {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-6 py-4 font-semibold text-slate-900 w-28">Date</th>
-                  <th className="px-6 py-4 font-semibold text-slate-900 w-48">Customer</th>
-                  <th className="px-6 py-4 font-semibold text-slate-900 w-32">Domain</th>
-                  <th className="px-6 py-4 font-semibold text-slate-900 w-48">OEMs</th>
-                  <th className="px-6 py-4 font-semibold text-slate-900 text-right w-28">Revenue</th>
-                  <th className="px-6 py-4 font-semibold text-slate-900 text-right w-24">GP</th>
-                  <th className="px-6 py-4 font-semibold text-slate-900 w-56">Linked Rock</th>
+                  <th className="px-6 py-4 font-semibold text-slate-900 w-64">Title</th>
+                  <th className="px-6 py-4 font-semibold text-slate-900 w-32">Type</th>
+                  <th className="px-6 py-4 font-semibold text-slate-900 w-28">Priority</th>
+                  <th className="px-6 py-4 font-semibold text-slate-900 w-28">Status</th>
+                  <th className="px-6 py-4 font-semibold text-slate-900 w-28">Due Date</th>
                   <th className="px-6 py-4 font-semibold text-slate-900 w-32">Owner</th>
                   <th className="px-6 py-4 w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredEngagements.map((engagement) => (
+                {filteredIssues.map((issue) => (
                   <tr
-                    key={engagement.id}
+                    key={issue.id}
                     className="hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4 text-slate-500">
-                      {formatDate(engagement.date)}
+                      {formatDate(issue.date)}
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-900">
-                      {engagement.customer}
+                      {issue.title}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {engagement.domains.map((domain) => (
-                          <Badge
-                            key={domain}
-                            variant={getDomainBadgeVariant(domain) as "cloud" | "security" | "infra" | "network" | "default"}
-                          >
-                            {domain}
-                          </Badge>
-                        ))}
-                      </div>
+                      <Badge
+                        variant={getIssueTypeBadgeVariant(issue.issueType) as "cloud" | "destructive" | "infra" | "warning" | "default"}
+                      >
+                        {issue.issueType.charAt(0).toUpperCase() + issue.issueType.slice(1)}
+                      </Badge>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {engagement.oems.map((oem) => (
-                          <Badge key={oem} variant="default" className="bg-slate-100 text-slate-600 ring-slate-200">
-                            {oem}
-                          </Badge>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono text-slate-600">
-                      {formatCurrency(engagement.revenue)}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono text-emerald-600">
-                      {formatCurrency(engagement.gp)}
+                      <Badge
+                        variant={getPriorityBadgeVariant(issue.priority)}
+                      >
+                        {issue.priority.charAt(0).toUpperCase() + issue.priority.slice(1)}
+                      </Badge>
                     </td>
                     <td className="px-6 py-4">
-                      {engagement.linkedRock ? (
-                        <div className="flex items-center gap-2">
-                          <Link2 className="h-4 w-4 text-blue-500" />
-                          <span className="text-sm text-blue-600 font-medium truncate max-w-[180px]">
-                            {engagement.linkedRock}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 text-sm">—</span>
-                      )}
+                      <Badge
+                        variant={getStatusBadgeVariant(issue.status)}
+                      >
+                        {issue.status.replace('_', ' ').charAt(0).toUpperCase() + issue.status.replace('_', ' ').slice(1)}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500">
+                      {issue.dueDate ? formatDate(issue.dueDate) : '—'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Avatar className={`h-6 w-6 ${engagement.owner.color}`}>
-                          <AvatarFallback className={`text-[10px] font-bold ${engagement.owner.color}`}>
-                            {engagement.owner.initials}
+                        <Avatar className={`h-6 w-6 ${issue.owner.color}`}>
+                          <AvatarFallback className={`text-[10px] font-bold ${issue.owner.color}`}>
+                            {issue.owner.initials}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-slate-700 text-sm">{engagement.owner.name}</span>
+                        <span className="text-slate-700 text-sm">{issue.owner.name}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -365,7 +383,7 @@ export default function StreamPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-3">
             <p className="text-xs text-slate-500">
-              Showing 1 to {filteredEngagements.length} of {engagements.length} entries
+              Showing 1 to {filteredIssues.length} of {issues.length} entries
             </p>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -381,11 +399,11 @@ export default function StreamPage() {
         </div>
       </div>
 
-      {/* Engagement Drawer */}
+      {/* Issue Drawer */}
       <EngagementDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        onSave={handleCreateEngagement}
+        onSave={handleCreateIssue}
       />
     </div>
   )

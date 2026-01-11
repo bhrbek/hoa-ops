@@ -1,10 +1,6 @@
--- Add missing FK constraint for commitments.owner_id -> profiles.id
--- This was missing from the original schema and causes PGRST200 errors
--- when using explicit FK hints in Supabase queries
+-- Migration: 021_add_commitments_owner_fk (LEGACY)
+-- NOTE: This migration is a no-op. The FK constraint is now
+-- included directly in migration 001_create_tables.sql
 
-ALTER TABLE public.commitments
-ADD CONSTRAINT commitments_owner_id_fkey
-FOREIGN KEY (owner_id) REFERENCES public.profiles(id);
-
--- Add comment
-COMMENT ON CONSTRAINT commitments_owner_id_fkey ON public.commitments IS 'FK to profiles for commitment owner';
+-- No-op: FK constraint already exists from migration 001
+SELECT 1;

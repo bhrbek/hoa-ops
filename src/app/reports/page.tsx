@@ -2,9 +2,7 @@
 
 import * as React from "react"
 import {
-  BarChart3,
   TrendingUp,
-  DollarSign,
   Users,
   FileText,
   Download,
@@ -13,70 +11,79 @@ import {
   Loader2,
   AlertTriangle,
   RefreshCw,
+  CheckCircle2,
+  Clock,
+  Wrench,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTeam } from "@/contexts/team-context"
-import { getActiveEngagementStats, getOEMBuyingPatterns, getActiveEngagements } from "@/app/actions/engagements"
+import { getActiveIssueStats, getActiveIssues } from "@/app/actions/issues"
 
-interface EngagementStats {
-  totalRevenue: number
-  totalGP: number
-  engagementCount: number
-  workshopCount: number
+interface IssueStats {
+  totalIssues: number
+  openIssues: number
+  inProgressIssues: number
+  resolvedIssues: number
+  urgentIssues: number
 }
 
-interface OEMPair {
-  oem1_name: string
-  oem2_name: string
-  pair_count: number
+interface IssueTypeTrend {
+  issueType: string
+  count: number
+  openCount: number
 }
 
-interface DomainTrend {
-  domain: string
-  engagements: number
-  revenue: number
+interface PriorityDistribution {
+  priority: string
+  count: number
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function getAssetTypeColor(type: string): string {
-  switch (type) {
-    case "demo":
+function getIssueTypeColor(type: string): string {
+  switch (type?.toLowerCase()) {
+    case "maintenance":
       return "bg-blue-50 text-blue-700"
-    case "deck":
+    case "complaint":
+      return "bg-red-50 text-red-700"
+    case "request":
       return "bg-amber-50 text-amber-700"
-    case "whitepaper":
-      return "bg-emerald-50 text-emerald-700"
-    case "tool":
+    case "violation":
       return "bg-purple-50 text-purple-700"
     default:
       return "bg-slate-50 text-slate-700"
   }
 }
 
+function getPriorityColor(priority: string): string {
+  switch (priority?.toLowerCase()) {
+    case "urgent":
+      return "bg-red-500"
+    case "high":
+      return "bg-orange-500"
+    case "medium":
+      return "bg-yellow-500"
+    case "low":
+      return "bg-green-500"
+    default:
+      return "bg-slate-500"
+  }
+}
+
 export default function ReportsPage() {
   const { activeTeam, isLoading } = useTeam()
-  const [stats, setStats] = React.useState<EngagementStats | null>(null)
-  const [oemPairs, setOemPairs] = React.useState<OEMPair[]>([])
-  const [domainTrends, setDomainTrends] = React.useState<DomainTrend[]>([])
+  const [stats, setStats] = React.useState<IssueStats | null>(null)
+  const [issueTypeTrends, setIssueTypeTrends] = React.useState<IssueTypeTrend[]>([])
+  const [priorityDistribution, setPriorityDistribution] = React.useState<PriorityDistribution[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
   const fetchData = React.useCallback(async () => {
     if (!activeTeam) {
       setStats(null)
-      setOemPairs([])
-      setDomainTrends([])
+      setIssueTypeTrends([])
+      setPriorityDistribution([])
       setIsLoadingData(false)
       setError(null)
       return
@@ -86,42 +93,54 @@ export default function ReportsPage() {
     setError(null)
     try {
       // Fetch all report data in parallel
-      const [statsData, oemData, engagementsData] = await Promise.all([
-        getActiveEngagementStats(),
-        getOEMBuyingPatterns(10),
-        getActiveEngagements({ limit: 500 })
+      const [statsData, issuesData] = await Promise.all([
+        getActiveIssueStats(),
+        getActiveIssues({ limit: 500 })
       ])
 
       setStats(statsData)
-      setOemPairs(oemData)
 
-      // Aggregate domain trends from engagements
-      const domainMap = new Map<string, { engagements: number; revenue: number }>()
-      engagementsData.forEach(e => {
-        e.domains?.forEach(d => {
-          const existing = domainMap.get(d.name) || { engagements: 0, revenue: 0 }
-          domainMap.set(d.name, {
-            engagements: existing.engagements + 1,
-            revenue: existing.revenue + e.revenue_impact
-          })
+      // Aggregate issue type trends
+      const typeMap = new Map<string, { count: number; openCount: number }>()
+      issuesData.forEach(i => {
+        const issueType = i.issue_type || 'other'
+        const existing = typeMap.get(issueType) || { count: 0, openCount: 0 }
+        typeMap.set(issueType, {
+          count: existing.count + 1,
+          openCount: existing.openCount + (i.status === 'open' ? 1 : 0)
         })
       })
 
-      const trends = Array.from(domainMap.entries())
-        .map(([domain, data]) => ({
-          domain,
-          engagements: data.engagements,
-          revenue: data.revenue
+      const typeTrends = Array.from(typeMap.entries())
+        .map(([issueType, data]) => ({
+          issueType,
+          count: data.count,
+          openCount: data.openCount
         }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 10)
+        .sort((a, b) => b.count - a.count)
 
-      setDomainTrends(trends)
+      setIssueTypeTrends(typeTrends)
+
+      // Aggregate priority distribution
+      const priorityMap = new Map<string, number>()
+      issuesData.forEach(i => {
+        const priority = i.priority || 'medium'
+        priorityMap.set(priority, (priorityMap.get(priority) || 0) + 1)
+      })
+
+      const priorities = Array.from(priorityMap.entries())
+        .map(([priority, count]) => ({ priority, count }))
+        .sort((a, b) => {
+          const order = ['urgent', 'high', 'medium', 'low']
+          return order.indexOf(a.priority) - order.indexOf(b.priority)
+        })
+
+      setPriorityDistribution(priorities)
     } catch (err) {
       console.error('Failed to fetch report data:', err)
       setStats(null)
-      setOemPairs([])
-      setDomainTrends([])
+      setIssueTypeTrends([])
+      setPriorityDistribution([])
       setError('Failed to load report data. Please try again.')
     } finally {
       setIsLoadingData(false)
@@ -183,31 +202,89 @@ export default function ReportsPage() {
           </Card>
         )}
 
+        {/* Summary Cards */}
+        {!error && stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-slate-100">
+                    <FileText className="h-6 w-6 text-slate-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">{stats.totalIssues}</p>
+                    <p className="text-sm text-slate-500">Total Issues</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-amber-100">
+                    <Clock className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-amber-600">{stats.openIssues}</p>
+                    <p className="text-sm text-slate-500">Open Issues</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-blue-100">
+                    <Wrench className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{stats.inProgressIssues}</p>
+                    <p className="text-sm text-slate-500">In Progress</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-emerald-100">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-600">{stats.resolvedIssues}</p>
+                    <p className="text-sm text-slate-500">Resolved</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Report Tabs */}
         {!error && (
-        <Tabs defaultValue="assets" className="space-y-6">
+        <Tabs defaultValue="types" className="space-y-6">
           <TabsList className="bg-white border border-slate-200">
-            <TabsTrigger value="assets" className="gap-2">
+            <TabsTrigger value="types" className="gap-2">
               <FileText className="h-4 w-4" />
-              Revenue by Asset
+              Issue Types
             </TabsTrigger>
-            <TabsTrigger value="oems" className="gap-2">
-              <Users className="h-4 w-4" />
-              OEM Pairs
+            <TabsTrigger value="priority" className="gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Priority Distribution
             </TabsTrigger>
-            <TabsTrigger value="domains" className="gap-2">
+            <TabsTrigger value="trends" className="gap-2">
               <TrendingUp className="h-4 w-4" />
-              Domain Trends
+              Trends
             </TabsTrigger>
           </TabsList>
 
-          {/* Revenue by Asset */}
-          <TabsContent value="assets" className="space-y-6">
+          {/* Issue Types */}
+          <TabsContent value="types" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Revenue by Asset</CardTitle>
+                <CardTitle>Issues by Type</CardTitle>
                 <CardDescription>
-                  Track which assets drive the most revenue from engagements
+                  Breakdown of issues by category
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -216,124 +293,125 @@ export default function ReportsPage() {
                     <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
                     <span className="ml-2 text-slate-500">Loading...</span>
                   </div>
-                ) : (
+                ) : issueTypeTrends.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <FileText className="h-12 w-12 text-slate-300 mb-3" />
                     <p className="text-sm text-slate-500">
-                      Asset-based revenue tracking coming soon
+                      No issue data yet
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Link assets to engagements to see revenue attribution
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* OEM Pairs */}
-          <TabsContent value="oems" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>OEM Buying Patterns</CardTitle>
-                <CardDescription>
-                  Most common OEM combinations in successful engagements
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isPageLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                    <span className="ml-2 text-slate-500">Loading...</span>
-                  </div>
-                ) : oemPairs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <Users className="h-12 w-12 text-slate-300 mb-3" />
-                    <p className="text-sm text-slate-500">
-                      No OEM pairing data yet
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Log engagements with multiple OEMs to see patterns
+                      Create issues to see type breakdowns
                     </p>
                   </div>
                 ) : (
                 <div className="space-y-4">
-                  {oemPairs.map((pair, index) => (
+                  {issueTypeTrends.map((type) => (
                     <div
-                      key={`${pair.oem1_name}-${pair.oem2_name}`}
+                      key={type.issueType}
                       className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 font-bold">
-                        {index + 1}
+                      <div className={`px-3 py-1.5 rounded-lg font-medium ${getIssueTypeColor(type.issueType)}`}>
+                        {type.issueType.charAt(0).toUpperCase() + type.issueType.slice(1)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">{pair.oem1_name}</Badge>
-                          <span className="text-slate-400">+</span>
-                          <Badge variant="default">{pair.oem2_name}</Badge>
-                        </div>
-                        <p className="text-sm text-slate-500 mt-1">
-                          {pair.pair_count} joint appearances
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Domain Trends */}
-          <TabsContent value="domains" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Domain Trends</CardTitle>
-                <CardDescription>
-                  Technology domain activity and revenue trends
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isPageLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                    <span className="ml-2 text-slate-500">Loading...</span>
-                  </div>
-                ) : domainTrends.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <TrendingUp className="h-12 w-12 text-slate-300 mb-3" />
-                    <p className="text-sm text-slate-500">
-                      No domain data yet
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Log engagements with domains to see trends
-                    </p>
-                  </div>
-                ) : (
-                <div className="space-y-4">
-                  {domainTrends.map((domain) => (
-                    <div
-                      key={domain.domain}
-                      className="flex items-center gap-4 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium text-slate-900">
-                          {domain.domain}
-                        </span>
                         <p className="text-sm text-slate-500">
-                          {domain.engagements} engagements
+                          {type.count} total issues
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-emerald-600">
-                          {formatCurrency(domain.revenue)}
+                        <p className="text-lg font-bold text-amber-600">
+                          {type.openCount}
                         </p>
-                        <p className="text-xs text-slate-500">influenced revenue</p>
+                        <p className="text-xs text-slate-500">open</p>
                       </div>
                     </div>
                   ))}
                 </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Priority Distribution */}
+          <TabsContent value="priority" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Priority Distribution</CardTitle>
+                <CardDescription>
+                  Issues broken down by priority level
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isPageLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    <span className="ml-2 text-slate-500">Loading...</span>
+                  </div>
+                ) : priorityDistribution.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <AlertTriangle className="h-12 w-12 text-slate-300 mb-3" />
+                    <p className="text-sm text-slate-500">
+                      No priority data yet
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Create issues to see priority distribution
+                    </p>
+                  </div>
+                ) : (
+                <div className="space-y-4">
+                  {priorityDistribution.map((item) => {
+                    const total = priorityDistribution.reduce((sum, p) => sum + p.count, 0)
+                    const percentage = total > 0 ? Math.round((item.count / total) * 100) : 0
+                    return (
+                      <div
+                        key={item.priority}
+                        className="flex items-center gap-4 p-4 rounded-lg border border-slate-200"
+                      >
+                        <div className={`w-3 h-3 rounded-full ${getPriorityColor(item.priority)}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-slate-900 capitalize">
+                              {item.priority}
+                            </span>
+                            <span className="text-sm text-slate-500">
+                              {item.count} issues ({percentage}%)
+                            </span>
+                          </div>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${getPriorityColor(item.priority)} transition-all`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Trends */}
+          <TabsContent value="trends" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Issue Trends</CardTitle>
+                <CardDescription>
+                  Issue activity over time
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <TrendingUp className="h-12 w-12 text-slate-300 mb-3" />
+                  <p className="text-sm text-slate-500">
+                    Trend analysis coming soon
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Track issue resolution rates and response times
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -343,8 +421,8 @@ export default function ReportsPage() {
         {/* Disclaimer */}
         <div className="text-center text-xs text-slate-400 py-4">
           <p>
-            These reports are for business observability only.
-            Revenue and engagement metrics do NOT influence Rock health.
+            These reports provide visibility into HOA issue management.
+            Use this data to improve response times and identify common issues.
           </p>
         </div>
       </div>

@@ -5,10 +5,10 @@
 -- B1: Team-Scoped Indexes (Critical)
 -- ============================================
 
--- Core strategy tables
+-- Core strategy tables (rocks and projects have team_id)
 CREATE INDEX IF NOT EXISTS idx_rocks_team ON public.rocks(team_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_projects_team ON public.projects(team_id) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_tasks_team ON public.tasks(team_id) WHERE deleted_at IS NULL;
+-- Note: tasks does not have team_id, it references projects
 
 -- Observability tables
 CREATE INDEX IF NOT EXISTS idx_engagements_team ON public.engagements(team_id) WHERE deleted_at IS NULL;
@@ -57,7 +57,7 @@ CREATE INDEX IF NOT EXISTS idx_engagement_assets_asset ON public.engagement_asse
 CREATE INDEX IF NOT EXISTS idx_engagement_assets_engagement ON public.engagement_assets(engagement_id);
 CREATE INDEX IF NOT EXISTS idx_project_assets_asset ON public.project_assets(asset_id);
 CREATE INDEX IF NOT EXISTS idx_project_assets_project ON public.project_assets(project_id);
-CREATE INDEX IF NOT EXISTS idx_enablement_event_assets_event ON public.enablement_event_assets(event_id);
+CREATE INDEX IF NOT EXISTS idx_enablement_event_assets_event ON public.enablement_event_assets(enablement_event_id);
 CREATE INDEX IF NOT EXISTS idx_enablement_event_assets_asset ON public.enablement_event_assets(asset_id);
 
 -- ============================================
@@ -71,7 +71,6 @@ CREATE INDEX IF NOT EXISTS idx_customers_org ON public.customers(org_id) WHERE d
 -- B5: Stats Aggregation RPC
 -- ============================================
 
--- Replace JavaScript aggregation with database-level aggregation
 CREATE OR REPLACE FUNCTION public.get_engagement_stats(p_team_id uuid)
 RETURNS TABLE (
   total_revenue numeric,
@@ -92,7 +91,6 @@ $$ LANGUAGE sql SECURITY DEFINER SET search_path = '';
 -- B6: Update OEM Buying Patterns to support team filter
 -- ============================================
 
--- Drop and recreate with team_id parameter
 DROP FUNCTION IF EXISTS public.get_oem_buying_patterns(integer);
 
 CREATE OR REPLACE FUNCTION public.get_oem_buying_patterns(

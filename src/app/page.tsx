@@ -5,9 +5,7 @@ import Link from "next/link"
 import {
   Calendar,
   TrendingUp,
-  DollarSign,
   Users,
-  Presentation,
   ChevronRight,
   CheckCircle2,
   Circle,
@@ -22,13 +20,13 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { formatCompactCurrency, formatShortDate } from "@/lib/utils"
+import { formatShortDate } from "@/lib/utils"
 import { EngagementDrawer } from "@/components/stream/engagement-drawer"
 import { useTeam } from "@/contexts/team-context"
 import { getActiveRocks } from "@/app/actions/rocks"
-import { getActiveEngagements, getActiveEngagementStats } from "@/app/actions/engagements"
+import { getActiveIssues, getActiveIssueStats } from "@/app/actions/issues"
 import { VistaSkeleton } from "@/components/vista/vista-skeleton"
-import type { RockWithProjects, EngagementWithRelations } from "@/types/supabase"
+import type { RockWithProjects, IssueWithRelations } from "@/types/supabase"
 
 // Avatar color palette for consistent user colors
 const AVATAR_COLORS = [
@@ -63,11 +61,12 @@ function getAvatarColor(id: string): string {
 }
 
 // Types
-interface EngagementStats {
-  totalRevenue: number
-  totalGP: number
-  engagementCount: number
-  workshopCount: number
+interface IssueStats {
+  totalIssues: number
+  openIssues: number
+  inProgressIssues: number
+  resolvedIssues: number
+  urgentIssues: number
 }
 
 interface UIRock {
@@ -81,10 +80,11 @@ interface UIRock {
 
 interface UILog {
   id: string
-  customer: string
+  title: string
   type: string
   date: string
-  revenue: number
+  priority: string
+  status: string
 }
 
 // Mock data for sections not yet wired to real data
@@ -127,13 +127,15 @@ function transformRock(rock: RockWithProjects): UIRock {
   }
 }
 
-function transformToLog(e: EngagementWithRelations): UILog {
+function transformToLog(e: IssueWithRelations): UILog {
+  const issueType = e.issue_type || 'issue'
   return {
     id: e.id,
-    customer: e.customer?.name || e.customer_name || 'Unknown',
-    type: e.activity_type.charAt(0).toUpperCase() + e.activity_type.slice(1).replace('_', ' '),
+    title: e.title || e.customer_name || 'Untitled Issue',
+    type: issueType.charAt(0).toUpperCase() + issueType.slice(1).replace('_', ' '),
     date: formatShortDate(e.date),
-    revenue: e.revenue_impact,
+    priority: e.priority || 'medium',
+    status: e.status || 'open',
   }
 }
 
@@ -158,45 +160,45 @@ export default function VistaPage() {
   const { activeTeam, isLoading: isTeamLoading } = useTeam()
 
   // Data states
-  const [stats, setStats] = React.useState<EngagementStats | null>(null)
+  const [stats, setStats] = React.useState<IssueStats | null>(null)
   const [rocks, setRocks] = React.useState<UIRock[]>([])
   const [recentLogs, setRecentLogs] = React.useState<UILog[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
-  // Scorecard data (mix of real and placeholder)
+  // Scorecard data for HOA operations
   const scorecard = React.useMemo(() => [
     {
-      title: "Revenue Influenced",
-      value: stats?.totalRevenue ?? 0,
-      format: "currency" as const,
-      change: "this quarter",
-      icon: DollarSign,
-      href: "/reports",
-    },
-    {
-      title: "Engagements",
-      value: stats?.engagementCount ?? 0,
+      title: "Total Issues",
+      value: stats?.totalIssues ?? 0,
       format: "number" as const,
-      change: "active",
+      change: "all time",
       icon: Users,
       href: "/stream",
     },
     {
-      title: "Rock Velocity",
-      value: 72, // Placeholder - needs key result aggregation
-      format: "percent" as const,
-      change: "avg progress",
-      icon: TrendingUp,
-      href: "/rocks",
+      title: "Open Issues",
+      value: stats?.openIssues ?? 0,
+      format: "number" as const,
+      change: "need attention",
+      icon: AlertTriangle,
+      href: "/stream?status=open",
     },
     {
-      title: "Workshops Delivered",
-      value: stats?.workshopCount ?? 0,
+      title: "In Progress",
+      value: stats?.inProgressIssues ?? 0,
       format: "number" as const,
-      change: "this quarter",
-      icon: Presentation,
-      href: "/stream?type=workshop",
+      change: "being worked",
+      icon: TrendingUp,
+      href: "/stream?status=in_progress",
+    },
+    {
+      title: "Urgent",
+      value: stats?.urgentIssues ?? 0,
+      format: "number" as const,
+      change: "high priority",
+      icon: Clock,
+      href: "/stream?priority=urgent",
     },
   ], [stats])
 
@@ -213,15 +215,15 @@ export default function VistaPage() {
     setIsLoadingData(true)
     setError(null)
     try {
-      const [statsData, rocksData, engagementsData] = await Promise.all([
-        getActiveEngagementStats(),
+      const [statsData, rocksData, issuesData] = await Promise.all([
+        getActiveIssueStats(),
         getActiveRocks(),
-        getActiveEngagements({ limit: 5 }),
+        getActiveIssues({ limit: 5 }),
       ])
 
       setStats(statsData)
       setRocks(rocksData.slice(0, 3).map(transformRock))
-      setRecentLogs(engagementsData.map(transformToLog))
+      setRecentLogs(issuesData.map(transformToLog))
     } catch (err) {
       console.error('Failed to fetch Vista data:', err)
       setStats(null)
@@ -345,11 +347,7 @@ export default function VistaPage() {
                       <div>
                         <p className="text-sm font-medium text-slate-500 group-hover:text-slate-700 transition-colors">{metric.title}</p>
                         <p className="text-3xl font-bold text-emerald-600 mt-2">
-                          {metric.format === "currency"
-                            ? formatCompactCurrency(metric.value)
-                            : metric.format === "percent"
-                              ? `${metric.value}%`
-                              : metric.value}
+                          {metric.value}
                         </p>
                         <p className="text-xs text-slate-400 font-medium mt-1">{metric.change}</p>
                       </div>
@@ -571,15 +569,16 @@ export default function VistaPage() {
                               <Users className="h-4 w-4 text-slate-500 group-hover:text-blue-600 transition-colors" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{log.customer}</p>
+                              <p className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{log.title}</p>
                               <p className="text-xs text-slate-500">{log.type} • {log.date}</p>
                             </div>
                           </div>
-                          {log.revenue > 0 && (
-                            <span className="text-sm font-semibold text-emerald-600">
-                              {formatCompactCurrency(log.revenue)}
-                            </span>
-                          )}
+                          <Badge
+                            variant={log.priority === 'urgent' ? 'destructive' : log.priority === 'high' ? 'warning' : 'default'}
+                            className="text-xs"
+                          >
+                            {log.priority}
+                          </Badge>
                         </div>
                       </Link>
                     ))}

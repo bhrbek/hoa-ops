@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { X, Search, DollarSign, Link2, User, Clock } from "lucide-react"
+import { X, User, Clock, AlertTriangle } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -23,62 +23,78 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { AssetSelector } from "@/components/stream/asset-selector"
 import { useTeam } from "@/contexts/team-context"
-import type { Domain, OEM, Rock, Asset, Engagement, ActivityType } from "@/types/supabase"
+import type { Issue, Rock, Vendor } from "@/types/supabase"
 
 interface EngagementDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  engagement?: Engagement & {
+  issue?: Issue & {
     owner?: { full_name: string } | null
     last_editor?: { full_name: string } | null
   }
-  onSave?: (data: EngagementFormData) => Promise<void>
+  onSave?: (data: IssueFormData) => Promise<void>
 }
 
-interface EngagementFormData {
-  customer_name: string
+interface IssueFormData {
+  title: string
+  description?: string
   date: string
-  activity_type: string
-  revenue_impact: number
-  gp_impact: number
+  issue_type: string
+  priority: string
+  status: string
   notes: string
   rock_id: string | null
-  domain_ids: string[]
-  oem_ids: string[]
-  asset_ids: string[]
+  vendor_ids: string[]
 }
+
+const ISSUE_TYPES = [
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'complaint', label: 'Complaint' },
+  { value: 'request', label: 'Request' },
+  { value: 'violation', label: 'Violation' },
+  { value: 'other', label: 'Other' },
+]
+
+const PRIORITIES = [
+  { value: 'urgent', label: 'Urgent' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+]
+
+const STATUSES = [
+  { value: 'open', label: 'Open' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
+]
 
 export function EngagementDrawer({
   open,
   onOpenChange,
-  engagement,
+  issue,
   onSave,
 }: EngagementDrawerProps) {
   const { activeTeam } = useTeam()
 
   // Form state
-  const [customerSearch, setCustomerSearch] = React.useState(engagement?.customer_name || "")
-  const [activityType, setActivityType] = React.useState<string>(engagement?.activity_type || "Workshop")
+  const [title, setTitle] = React.useState(issue?.title || "")
+  const [description, setDescription] = React.useState(issue?.description || "")
+  const [issueType, setIssueType] = React.useState<string>(issue?.issue_type || "maintenance")
+  const [priority, setPriority] = React.useState<string>(issue?.priority || "medium")
+  const [status, setStatus] = React.useState<string>(issue?.status || "open")
   const [date, setDate] = React.useState(
-    engagement?.date || new Date().toISOString().split("T")[0]
+    issue?.date || new Date().toISOString().split("T")[0]
   )
-  const [selectedDomains, setSelectedDomains] = React.useState<string[]>([])
-  const [selectedOems, setSelectedOems] = React.useState<string[]>([])
-  const [selectedAssets, setSelectedAssets] = React.useState<string[]>([])
-  const [linkedRock, setLinkedRock] = React.useState<string>(engagement?.rock_id || "")
-  const [revenue, setRevenue] = React.useState(engagement?.revenue_impact?.toString() || "")
-  const [gp, setGp] = React.useState(engagement?.gp_impact?.toString() || "")
-  const [notes, setNotes] = React.useState(engagement?.notes || "")
+  const [selectedVendors, setSelectedVendors] = React.useState<string[]>([])
+  const [linkedRock, setLinkedRock] = React.useState<string>(issue?.rock_id || "")
+  const [notes, setNotes] = React.useState(issue?.notes || "")
   const [isSaving, setIsSaving] = React.useState(false)
 
   // Data from server
-  const [domains, setDomains] = React.useState<Domain[]>([])
-  const [oems, setOems] = React.useState<OEM[]>([])
-  const [activityTypes, setActivityTypes] = React.useState<ActivityType[]>([])
+  const [vendors, setVendors] = React.useState<Vendor[]>([])
   const [rocks, setRocks] = React.useState<Rock[]>([])
-  const [assets, setAssets] = React.useState<Asset[]>([])
   const [isLoadingData, setIsLoadingData] = React.useState(true)
 
   // Load reference data when drawer opens
@@ -92,28 +108,20 @@ export function EngagementDrawer({
     setIsLoadingData(true)
     try {
       const [
-        { getDomains, getOEMs, getActivityTypes },
+        { getVendors },
         { getActiveRocks },
-        { getAssets },
       ] = await Promise.all([
         import("@/app/actions/reference"),
         import("@/app/actions/rocks"),
-        import("@/app/actions/assets"),
       ])
 
-      const [domainsData, oemsData, activityTypesData, rocksData, assetsData] = await Promise.all([
-        getDomains(),
-        getOEMs(),
-        getActivityTypes(),
+      const [vendorsData, rocksData] = await Promise.all([
+        getVendors(),
         activeTeam ? getActiveRocks(activeTeam.id) : Promise.resolve([]),
-        activeTeam ? getAssets(activeTeam.id) : Promise.resolve([]),
       ])
 
-      setDomains(domainsData)
-      setOems(oemsData)
-      setActivityTypes(activityTypesData)
+      setVendors(vendorsData)
       setRocks(rocksData)
-      setAssets(assetsData)
     } catch (error) {
       console.error("Failed to load reference data:", error)
     } finally {
@@ -121,64 +129,57 @@ export function EngagementDrawer({
     }
   }
 
-  // Reset form when engagement changes
+  // Reset form when issue changes
   React.useEffect(() => {
-    if (engagement) {
-      setCustomerSearch(engagement.customer_name)
-      setActivityType(engagement.activity_type)
-      setDate(engagement.date)
-      setLinkedRock(engagement.rock_id || "")
-      setRevenue(engagement.revenue_impact?.toString() || "")
-      setGp(engagement.gp_impact?.toString() || "")
-      setNotes(engagement.notes || "")
+    if (issue) {
+      setTitle(issue.title || "")
+      setDescription(issue.description || "")
+      setIssueType(issue.issue_type || "maintenance")
+      setPriority(issue.priority || "medium")
+      setStatus(issue.status || "open")
+      setDate(issue.date)
+      setLinkedRock(issue.rock_id || "")
+      setNotes(issue.notes || "")
     } else {
       resetForm()
     }
-  }, [engagement])
+  }, [issue])
 
   function resetForm() {
-    setCustomerSearch("")
-    setActivityType("Workshop")
+    setTitle("")
+    setDescription("")
+    setIssueType("maintenance")
+    setPriority("medium")
+    setStatus("open")
     setDate(new Date().toISOString().split("T")[0])
-    setSelectedDomains([])
-    setSelectedOems([])
-    setSelectedAssets([])
+    setSelectedVendors([])
     setLinkedRock("")
-    setRevenue("")
-    setGp("")
     setNotes("")
   }
 
-  const toggleDomain = (domainId: string) => {
-    setSelectedDomains((prev) =>
-      prev.includes(domainId)
-        ? prev.filter((d) => d !== domainId)
-        : [...prev, domainId]
-    )
-  }
-
-  const toggleOem = (oemId: string) => {
-    setSelectedOems((prev) =>
-      prev.includes(oemId) ? prev.filter((o) => o !== oemId) : [...prev, oemId]
+  const toggleVendor = (vendorId: string) => {
+    setSelectedVendors((prev) =>
+      prev.includes(vendorId)
+        ? prev.filter((v) => v !== vendorId)
+        : [...prev, vendorId]
     )
   }
 
   const handleSave = async (andLogAnother: boolean) => {
-    if (!customerSearch.trim()) return
+    if (!title.trim()) return
 
     setIsSaving(true)
 
-    const formData: EngagementFormData = {
-      customer_name: customerSearch,
+    const formData: IssueFormData = {
+      title,
+      description: description || undefined,
       date,
-      activity_type: activityType,
-      revenue_impact: parseFloat(revenue) || 0,
-      gp_impact: parseFloat(gp) || 0,
+      issue_type: issueType,
+      priority,
+      status,
       notes,
       rock_id: linkedRock || null,
-      domain_ids: selectedDomains,
-      oem_ids: selectedOems,
-      asset_ids: selectedAssets,
+      vendor_ids: selectedVendors,
     }
 
     try {
@@ -186,7 +187,7 @@ export function EngagementDrawer({
         await onSave(formData)
       }
 
-      toast.success(isEditing ? "Engagement updated" : "Engagement logged")
+      toast.success(isEditing ? "Issue updated" : "Issue created")
 
       if (andLogAnother) {
         resetForm()
@@ -194,70 +195,78 @@ export function EngagementDrawer({
         onOpenChange(false)
       }
     } catch (error) {
-      console.error("Failed to save engagement:", error)
-      toast.error("Failed to save engagement")
+      console.error("Failed to save issue:", error)
+      toast.error("Failed to save issue")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const isEditing = !!engagement
+  const isEditing = !!issue
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
-          <SheetTitle>{isEditing ? "Edit Engagement" : "Log New Engagement"}</SheetTitle>
+          <SheetTitle>{isEditing ? "Edit Issue" : "Create New Issue"}</SheetTitle>
           <SheetDescription>
             {isEditing
-              ? "Update the details of this customer interaction."
-              : "Capture field intelligence from your customer interaction."}
+              ? "Update the details of this issue."
+              : "Log a new HOA issue or request."}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-6 space-y-6">
-          {/* Creator/Editor Info (for existing engagements) */}
-          {isEditing && engagement && (
+          {/* Creator/Editor Info (for existing issues) */}
+          {isEditing && issue && (
             <div className="flex items-center gap-4 text-xs text-slate-500 pb-4 border-b border-slate-100">
-              {engagement.owner && (
+              {issue.owner && (
                 <div className="flex items-center gap-1.5">
                   <User className="h-3 w-3" />
-                  <span>Created by {engagement.owner.full_name}</span>
+                  <span>Created by {issue.owner.full_name}</span>
                 </div>
               )}
-              {engagement.last_editor && engagement.last_edited_at && (
+              {issue.last_editor && issue.last_edited_at && (
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3 w-3" />
-                  <span>Edited by {engagement.last_editor.full_name}</span>
+                  <span>Edited by {issue.last_editor.full_name}</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Context Section */}
+          {/* Issue Details Section */}
           <div className="space-y-4">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Context
+              Issue Details
             </h3>
 
-            {/* Customer Search */}
+            {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="customer">Customer</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  id="customer"
-                  placeholder="Search customers..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="Brief description of the issue..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Detailed description of the issue..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
             </div>
 
             {/* Date */}
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">Date Reported</Label>
               <Input
                 id="date"
                 type="date"
@@ -266,17 +275,17 @@ export function EngagementDrawer({
               />
             </div>
 
-            {/* Activity Type */}
+            {/* Issue Type */}
             <div className="space-y-2">
-              <Label htmlFor="activity-type">Activity Type</Label>
-              <Select value={activityType} onValueChange={setActivityType}>
-                <SelectTrigger id="activity-type">
+              <Label htmlFor="issue-type">Issue Type</Label>
+              <Select value={issueType} onValueChange={setIssueType}>
+                <SelectTrigger id="issue-type">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {activityTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.name}>
-                      {type.name}
+                  {ISSUE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -284,153 +293,108 @@ export function EngagementDrawer({
             </div>
           </div>
 
-          {/* Tech Stack Section */}
+          {/* Status Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tech Stack
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Priority & Status
             </h3>
 
-            {/* Domains */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Priority */}
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger id="priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status */}
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Vendors Section */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Related Vendors
+            </h3>
+
             <div className="space-y-2">
-              <Label>Domains</Label>
+              <Label>Vendors</Label>
               {isLoadingData ? (
                 <div className="flex gap-2">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="h-6 w-16 bg-slate-100 rounded animate-pulse" />
                   ))}
                 </div>
+              ) : vendors.length === 0 ? (
+                <p className="text-sm text-slate-500">No vendors configured</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {domains.map((domain) => (
+                  {vendors.map((vendor) => (
                     <button
-                      key={domain.id}
+                      key={vendor.id}
                       type="button"
-                      onClick={() => toggleDomain(domain.id)}
+                      onClick={() => toggleVendor(vendor.id)}
                       className="focus:outline-none"
                     >
                       <Badge
-                        variant={selectedDomains.includes(domain.id) ? "primary" : "outline"}
+                        variant={selectedVendors.includes(vendor.id) ? "default" : "outline"}
                         className={`cursor-pointer transition-all ${
-                          selectedDomains.includes(domain.id)
-                            ? "ring-2 ring-blue-200"
-                            : "hover:bg-slate-50"
-                        }`}
-                      >
-                        {domain.name}
-                        {selectedDomains.includes(domain.id) && (
-                          <X className="h-3 w-3 ml-1" />
-                        )}
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="text-xs text-slate-500">Select technology domains discussed</p>
-            </div>
-
-            {/* OEMs */}
-            <div className="space-y-2">
-              <Label>OEMs</Label>
-              {isLoadingData ? (
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-6 w-14 bg-slate-100 rounded animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {oems.map((oem) => (
-                    <button
-                      key={oem.id}
-                      type="button"
-                      onClick={() => toggleOem(oem.id)}
-                      className="focus:outline-none"
-                    >
-                      <Badge
-                        variant={selectedOems.includes(oem.id) ? "default" : "outline"}
-                        className={`cursor-pointer transition-all ${
-                          selectedOems.includes(oem.id)
+                          selectedVendors.includes(vendor.id)
                             ? "ring-2 ring-slate-300"
                             : "hover:bg-slate-50"
                         }`}
                       >
-                        {oem.name}
-                        {selectedOems.includes(oem.id) && <X className="h-3 w-3 ml-1" />}
+                        {vendor.name}
+                        {selectedVendors.includes(vendor.id) && <X className="h-3 w-3 ml-1" />}
                       </Badge>
                     </button>
                   ))}
                 </div>
               )}
-              <p className="text-xs text-slate-500">Select vendors/OEMs involved</p>
+              <p className="text-xs text-slate-500">Select vendors involved with this issue</p>
             </div>
           </div>
 
-          {/* Assets Section */}
+          {/* Link to Priority Section */}
           <div className="space-y-4">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Assets Used
-            </h3>
-            <AssetSelector
-              assets={assets}
-              selectedAssetIds={selectedAssets}
-              onSelectionChange={setSelectedAssets}
-              isLoading={isLoadingData}
-            />
-          </div>
-
-          {/* Financials Section */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Financials
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="revenue">Revenue Impact</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="revenue"
-                    type="number"
-                    placeholder="0.00"
-                    value={revenue}
-                    onChange={(e) => setRevenue(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gp">Gross Profit</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="gp"
-                    type="number"
-                    placeholder="0.00"
-                    value={gp}
-                    onChange={(e) => setGp(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* The Bridge Section */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              The Bridge
+              Link to Priority
             </h3>
 
             <div className="space-y-2">
-              <Label htmlFor="linked-rock">Link to Rock (Evidence)</Label>
+              <Label htmlFor="linked-rock">Link to Priority (Optional)</Label>
               <Select
                 value={linkedRock || "none"}
                 onValueChange={(val) => setLinkedRock(val === "none" ? "" : val)}
               >
                 <SelectTrigger id="linked-rock">
-                  <SelectValue placeholder="Select a rock to link..." />
+                  <SelectValue placeholder="Select a priority to link..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No link</SelectItem>
@@ -442,17 +406,17 @@ export function EngagementDrawer({
                 </SelectContent>
               </Select>
               <p className="text-xs text-slate-500">
-                Connect this engagement as evidence for a strategic rock
+                Connect this issue to a strategic priority
               </p>
             </div>
           </div>
 
           {/* Notes Section */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Engagement Notes</Label>
+            <Label htmlFor="notes">Additional Notes</Label>
             <Textarea
               id="notes"
-              placeholder="Key takeaways, action items, and next steps..."
+              placeholder="Any additional context or notes..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
@@ -465,15 +429,15 @@ export function EngagementDrawer({
             <Button
               variant="outline"
               onClick={() => handleSave(true)}
-              disabled={isSaving || !customerSearch.trim()}
+              disabled={isSaving || !title.trim()}
             >
-              Save & Log Another
+              Save & Create Another
             </Button>
           )}
           <Button
             variant="primary"
             onClick={() => handleSave(false)}
-            disabled={isSaving || !customerSearch.trim()}
+            disabled={isSaving || !title.trim()}
           >
             {isSaving ? "Saving..." : isEditing ? "Update" : "Save & Close"}
           </Button>

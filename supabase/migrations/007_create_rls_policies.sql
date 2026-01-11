@@ -297,28 +297,28 @@ CREATE POLICY "engagements_delete" ON public.engagements FOR DELETE
   );
 
 -- ============================================
--- BUILD_SIGNALS - Team-scoped
+-- KEY_RESULTS - Team-scoped
 -- ============================================
 
-CREATE POLICY "build_signals_select" ON public.build_signals FOR SELECT
+CREATE POLICY "key_results_select" ON public.key_results FOR SELECT
   TO authenticated
   USING (
     deleted_at IS NULL
     AND is_team_member(team_id)
   );
 
-CREATE POLICY "build_signals_insert" ON public.build_signals FOR INSERT
+CREATE POLICY "key_results_insert" ON public.key_results FOR INSERT
   TO authenticated
   WITH CHECK (is_team_member(team_id));
 
-CREATE POLICY "build_signals_update" ON public.build_signals FOR UPDATE
+CREATE POLICY "key_results_update" ON public.key_results FOR UPDATE
   TO authenticated
   USING (
     deleted_at IS NULL
     AND is_team_member(team_id)
   );
 
-CREATE POLICY "build_signals_delete" ON public.build_signals FOR DELETE
+CREATE POLICY "key_results_delete" ON public.key_results FOR DELETE
   TO authenticated
   USING (
     is_team_manager(team_id)

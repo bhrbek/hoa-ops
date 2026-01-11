@@ -399,32 +399,27 @@ This script:
 
 ### Database Migrations
 
-Current migration files (in order):
+Current migration files (001-024). Key migrations:
 
 | Migration | Purpose |
 |-----------|---------|
-| 001_create_tables.sql | Base tables + profile trigger |
-| 002_rls_policies.sql | Initial RLS policies |
-| 003_seed_data.sql | Reference data |
-| 004_create_helper_functions.sql | RLS helper functions |
-| 005_create_build_signals.sql | Key results table (originally build_signals) |
-| 006_fix_commitments_table.sql | Commitment model redesign |
-| 007_create_rls_policies.sql | Team-scoped RLS policies |
-| 008_deprecate_swarms.sql | Deprecate swarms → enablement_events |
-| 009_fix_rls_policies.sql | Fix commitment policies |
-| 010_enable_rls_junction_tables.sql | RLS for junction tables |
-| 011_fix_function_search_paths.sql | Security: search_path on functions |
-| 012_fix_profile_trigger.sql | Profile auto-creation trigger |
-| 013_fix_enablement_event_assets_rls.sql | RLS for enablement_event_assets |
-| 014_fix_team_memberships_rls.sql | Fix circular dependency in team_memberships |
-| 015_fix_all_rls_circular_deps.sql | Fix circular deps in org_admins, teams, orgs |
-| 016_fix_teams_select_policy.sql | Fix column reference bug in teams_select |
-| 020_rename_build_signals_to_key_results.sql | Rename build_signals → key_results |
+| 001-003 | Base tables, RLS policies, seed data |
+| 004 | RLS helper functions (`is_org_admin`, `is_team_member`, etc.) |
+| 005-006 | Key results table, commitment model redesign |
+| 007-009 | Team-scoped RLS policies and fixes |
+| 010-013 | Junction table RLS, function security, profile trigger |
+| 014-016 | Fix RLS circular dependencies and column references |
+| 017-019 | Activity types, audit log RLS, security warnings |
+| 020 | Rename `build_signals` → `key_results` |
+| 021-022 | Commitments FK, performance indexes |
+| 023-024 | Storage bucket, security issue fixes |
 
 **To push new migrations:**
 ```bash
-supabase db push
+supabase db push --linked
 ```
+
+**Next migration number:** 025
 
 
 ### Known Issue: Turbopack Middleware
@@ -678,6 +673,7 @@ render(<MyComponent />, {
     isLoading: false,
   },
 })
+```
 
 ---
 
@@ -713,9 +709,18 @@ claude mcp list
 claude mcp add <name> -- <command>
 ```
 
-### Available Skills
+### Available Skills & Commands
 
-Skills are documented workflows in `.claude/skills/`. Use them by name or run the associated commands.
+Skills and commands are documented workflows in `.claude/skills/` and `.claude/commands/`.
+
+**Commands** (user-invocable via `/`):
+
+| Command | Purpose | Description |
+|---------|---------|-------------|
+| `/ship` | Version, commit, push | Bumps VERSION, runs tests/build, commits, pushes |
+| `/review` | Production readiness review | Principal Engineer code review persona |
+
+**Skills** (documented workflows):
 
 | Skill | Purpose | Command |
 |-------|---------|---------|
@@ -724,11 +729,11 @@ Skills are documented workflows in `.claude/skills/`. Use them by name or run th
 | `/lint` | Code quality checks | `npm run lint` |
 | `/typecheck` | TypeScript checking | `npx tsc --noEmit` |
 | `/db` | Database operations | `supabase db push --linked` |
+| `/db-inspect` | Database exploration | See skill for queries |
 | `/debug-rls` | RLS permission debugging | `./scripts/debug-rls.sh` |
-| `/deploy-check` | Verify deployment status | `./scripts/check-deploy.sh` |
+| `/check-deploy` | Verify deployment status | `./scripts/check-deploy.sh` |
 | `/commit` | Safe git commits | See skill for checklist |
 | `/pr` | Create pull requests | `gh pr create` |
-| `/review` | Production readiness review | Invoke via `/review` |
 | `/startup` | Session initialization | Load memory + check state |
 | `/migration` | Database migration guide | See skill for steps |
 | `/new-dialog` | Dialog component template | See skill for pattern |
@@ -774,22 +779,15 @@ This file contains:
 - Discovering bugs/blockers
 - Making architectural decisions
 
-### Project Goals (Current Phase)
+### Project Status
 
-**Headwaters** is a strategy execution system for TSA organizations.
-
-**Current Focus Areas:**
-1. ~~Fix RLS/permission issues in all views~~ ✅ Complete
-2. ~~Wire up all pages to real data~~ ✅ Complete
-3. ~~Add rich text editing for Rocks~~ ✅ Complete (TipTap editor)
-4. ~~Make Vista dashboard cards clickable~~ ✅ Complete
-5. ~~Complete admin settings functionality~~ ✅ Complete
-6. ~~Rename Build Signal → Key Result~~ ✅ Complete (OKR terminology)
-7. ~~Deep linking support for Rocks~~ ✅ Complete
+**Headwaters** is a strategy execution system for TSA organizations. All core features implemented (Phases 0-14 complete).
 
 **Terminology (OKR alignment):**
 - **Rock** = Objective (quarterly strategic commitment)
 - **Key Result** = Measurable outcome that indicates Rock success
+
+**For detailed task history and future roadmap, see `docs/TASKS.md`.**
 
 ### Quick State Check Commands
 
