@@ -318,7 +318,7 @@ export async function updateDomain(
 }
 
 /**
- * Delete a domain (org admin only)
+ * Delete a domain (org admin only) - SOFT DELETE
  */
 export async function deleteDomain(domainId: string): Promise<void> {
   const activeTeam = await getActiveTeam()
@@ -328,9 +328,16 @@ export async function deleteDomain(domainId: string): Promise<void> {
 
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Soft delete - maintains audit trail per CLAUDE.md contract
   const { error } = await (supabase as any)
     .from('domains')
-    .delete()
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: user.id
+    })
     .eq('id', domainId)
 
   if (error) {
@@ -404,7 +411,7 @@ export async function updateOEM(
 }
 
 /**
- * Delete an OEM (org admin only)
+ * Delete an OEM (org admin only) - SOFT DELETE
  */
 export async function deleteOEM(oemId: string): Promise<void> {
   const activeTeam = await getActiveTeam()
@@ -414,9 +421,16 @@ export async function deleteOEM(oemId: string): Promise<void> {
 
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Soft delete - maintains audit trail per CLAUDE.md contract
   const { error } = await (supabase as any)
     .from('oems')
-    .delete()
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: user.id
+    })
     .eq('id', oemId)
 
   if (error) {
@@ -521,7 +535,7 @@ export async function updateActivityType(
 }
 
 /**
- * Delete an activity type (org admin only)
+ * Delete an activity type (org admin only) - SOFT DELETE
  */
 export async function deleteActivityType(activityTypeId: string): Promise<void> {
   const activeTeam = await getActiveTeam()
@@ -531,9 +545,16 @@ export async function deleteActivityType(activityTypeId: string): Promise<void> 
 
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Soft delete - maintains audit trail per CLAUDE.md contract
   const { error } = await (supabase as any)
     .from('activity_types')
-    .delete()
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: user.id
+    })
     .eq('id', activityTypeId)
 
   if (error) {

@@ -192,6 +192,17 @@ export async function setActiveTeam(teamId: string): Promise<void> {
   })
 }
 
+// Debug logging helper - only logs in development
+const debugLog = (message: string, data?: unknown) => {
+  if (process.env.NODE_ENV !== 'production') {
+    if (data !== undefined) {
+      console.log(message, data)
+    } else {
+      console.log(message)
+    }
+  }
+}
+
 /**
  * Require user to have access to a team. Throws if no access.
  */
@@ -200,15 +211,15 @@ export async function requireTeamAccess(teamId: string): Promise<{
   role: TeamRole
   isOrgAdmin: boolean
 }> {
-  console.log('[requireTeamAccess] Checking access for team:', teamId)
+  debugLog('[requireTeamAccess] Checking access for team:', teamId)
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    console.log('[requireTeamAccess] Not authenticated')
+    debugLog('[requireTeamAccess] Not authenticated')
     throw new Error('Not authenticated')
   }
-  console.log('[requireTeamAccess] User:', user.id)
+  debugLog('[requireTeamAccess] User:', user.id)
 
   // Check team membership - use maybeSingle() as user might not be a member
   const { data: membership, error: membershipError } = await (supabase as any)
@@ -219,7 +230,7 @@ export async function requireTeamAccess(teamId: string): Promise<{
     .is('deleted_at', null)
     .maybeSingle()
 
-  console.log('[requireTeamAccess] Membership:', { membership, error: membershipError?.message })
+  debugLog('[requireTeamAccess] Membership:', { membership, error: membershipError?.message })
 
   // Get team's org to check org admin status - use maybeSingle() to avoid throwing
   const { data: team, error: teamError } = await (supabase as any)
@@ -228,10 +239,10 @@ export async function requireTeamAccess(teamId: string): Promise<{
     .eq('id', teamId)
     .maybeSingle()
 
-  console.log('[requireTeamAccess] Team:', { team, error: teamError?.message })
+  debugLog('[requireTeamAccess] Team:', { team, error: teamError?.message })
 
   if (!team) {
-    console.log('[requireTeamAccess] Team not found')
+    debugLog('[requireTeamAccess] Team not found')
     throw new Error('Team not found')
   }
 
@@ -243,17 +254,17 @@ export async function requireTeamAccess(teamId: string): Promise<{
     .eq('user_id', user.id)
     .maybeSingle()
 
-  console.log('[requireTeamAccess] OrgAdmin:', { orgAdmin, error: orgAdminError?.message })
+  debugLog('[requireTeamAccess] OrgAdmin:', { orgAdmin, error: orgAdminError?.message })
 
   const isOrgAdmin = !!orgAdmin
 
   // User must be either team member or org admin
   if (!membership && !isOrgAdmin) {
-    console.log('[requireTeamAccess] Access denied - not member or org admin')
+    debugLog('[requireTeamAccess] Access denied - not member or org admin')
     throw new Error('Access denied: not a member of this team')
   }
 
-  console.log('[requireTeamAccess] Access granted:', { role: membership?.role || 'tsa', isOrgAdmin })
+  debugLog('[requireTeamAccess] Access granted:', { role: membership?.role || 'tsa', isOrgAdmin })
   return {
     userId: user.id,
     role: membership?.role || 'tsa', // Org admins get tsa role if not explicit member

@@ -295,20 +295,33 @@ export async function updateEngagement(
 
 /**
  * Soft delete an engagement
+ * Only owner, manager, or org admin can delete (aligned with RLS policy)
  */
 export async function deleteEngagement(engagementId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Get engagement's team to check access - use maybeSingle() as engagement might not exist
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Get engagement's team and owner to check access - use maybeSingle() as engagement might not exist
   const { data: engagement } = await (supabase as any)
     .from('engagements')
-    .select('team_id')
+    .select('team_id, owner_id')
     .eq('id', engagementId)
     .maybeSingle()
 
   if (!engagement) throw new Error('Engagement not found')
 
-  const { userId } = await requireTeamAccess(engagement.team_id)
+  // Check access - must be owner, manager, or org_admin (aligned with RLS)
+  const { userId, role, isOrgAdmin } = await requireTeamAccess(engagement.team_id)
+
+  // Only owner, manager, or org_admin can delete
+  const isOwner = engagement.owner_id === user.id
+  const canDelete = isOwner || role === 'manager' || isOrgAdmin
+
+  if (!canDelete) {
+    throw new Error('Access denied: only owner, manager, or org admin can delete engagements')
+  }
 
   const { error } = await (supabase as any)
     .from('engagements')

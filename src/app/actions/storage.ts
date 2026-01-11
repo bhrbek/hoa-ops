@@ -6,6 +6,14 @@ const BUCKET_NAME = 'rock-attachments'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
+// Map MIME types to file extensions - derive from validated type, not user input
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp'
+}
+
 /**
  * Upload an image to Supabase Storage
  * Returns the public URL of the uploaded image
@@ -34,7 +42,8 @@ export async function uploadImage(formData: FormData): Promise<{ url: string; pa
   }
 
   // Generate unique path: user_id/timestamp.extension
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  // Derive extension from validated MIME type, not user-provided filename
+  const ext = MIME_TO_EXT[file.type] || 'jpg'
   const timestamp = Date.now()
   const path = `${user.id}/${timestamp}.${ext}`
 

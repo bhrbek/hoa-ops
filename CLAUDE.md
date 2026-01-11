@@ -1,19 +1,47 @@
-# HEADWATERS – SYSTEM CONTRACT FOR CLAUDE
+# CLAUDE.md
 
-You are building an Enterprise Operating System (EOS-inspired) application for a Pre-Sales Technical Solutions Architect (TSA) organization.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This system is NOT:
-- A CRM
-- A task manager
-- A customer delivery tracker
-- A gamified productivity tool
+---
 
-This system IS:
+# HEADWATERS – SYSTEM CONTRACT
+
+An Enterprise Operating System (EOS-inspired) application for Pre-Sales Technical Solutions Architect (TSA) organizations.
+
+**This system IS:**
 - A strategy execution system (Rocks & Projects)
 - A business observability system (Engagement intelligence)
 - A capacity-constrained operating model
 
+**This system is NOT:** A CRM, task manager, customer delivery tracker, or gamified productivity tool.
+
 Failure to respect these constraints is a functional bug.
+
+---
+
+## BUILD & DEVELOPMENT COMMANDS
+
+```bash
+# Development
+npm run dev              # Start dev server (Next.js 16 with Turbopack)
+npm run build            # Production build
+npm run start            # Start production server
+
+# Testing
+npm run test             # Watch mode
+npm run test:run         # Single run (CI)
+npm run test:coverage    # With coverage
+npm run test -- <file>   # Run specific test file
+
+# Code Quality
+npm run lint             # ESLint
+npx tsc --noEmit         # TypeScript check
+
+# Database (Supabase)
+supabase migration list --linked   # Check migration status
+supabase db push --linked          # Push migrations
+supabase inspect db table-stats --linked  # Table stats
+```
 
 ---
 
@@ -318,11 +346,6 @@ import { getAssets } from '@/app/actions/assets'
 ---
 
 ## DEVELOPMENT NOTES
-
-### Git Commit Guidelines
-- NEVER add "Generated with Claude Code" or similar attribution to commits
-- NEVER add "Co-Authored-By: Claude" or any AI co-author attribution
-- Commit messages should describe the changes, not who/what made them
 
 ### Versioning
 - Version format: `YYYYMMDD-vN` (e.g., `20260106-v6`)
@@ -783,8 +806,8 @@ git log --oneline -5
 # Check if deployment is current
 curl -s https://thejar.vercel.app/api/debug | jq '.serverActions.getActiveRocks'
 
-# Database quick check
-PGPASSWORD='kvTnp1OB4mBRma60' psql "postgresql://postgres:kvTnp1OB4mBRma60@db.pstevmcaxrqalafoyxmy.supabase.co:5432/postgres" -c "SELECT COUNT(*) FROM rocks WHERE deleted_at IS NULL;"
+# Database quick check (use supabase projects api-keys to get credentials)
+# See SUPABASE CLI WORKFLOW section for REST API queries
 ```
 
 ### Resuming Work

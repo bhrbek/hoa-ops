@@ -1,5 +1,5 @@
 // Debug endpoint to diagnose server-side issues
-// REMOVE THIS FILE IN PRODUCTION
+// BLOCKED IN PRODUCTION - only available in development
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
@@ -10,6 +10,13 @@ import { getActiveEngagements, getActiveEngagementStats } from '@/app/actions/en
 import { getTeamMembers } from '@/app/actions/teams'
 
 export async function GET() {
+  // P0 SECURITY: Block this endpoint in production
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Debug endpoint not available in production' },
+      { status: 403 }
+    )
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: Record<string, any> = {
     timestamp: new Date().toISOString(),
