@@ -22,10 +22,10 @@ const navItems = [
     title: "The Stream",
     href: "/stream",
     icon: Waves,
-    description: "Engagements",
+    description: "Issues",
   },
   {
-    title: "Rocks",
+    title: "Priorities",
     href: "/rocks",
     icon: Mountain,
     description: "Strategy",
@@ -34,7 +34,7 @@ const navItems = [
     title: "Commitments",
     href: "/commitment-board",
     icon: ClipboardList,
-    description: "Weekly",
+    description: "Monthly",
   },
   {
     title: "Reports",
@@ -89,8 +89,8 @@ export function Sidebar({
           </svg>
         </div>
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">Headwaters</h1>
-          <p className="text-xs text-slate-500">Strategic OS</p>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">HOA-Ops</h1>
+          <p className="text-xs text-slate-500">Community Management</p>
         </div>
       </div>
 
